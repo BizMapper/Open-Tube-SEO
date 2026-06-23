@@ -1,0 +1,570 @@
+// =============================================================================
+// popup.js — Main popup script with tabbed interface
+// =============================================================================
+// This module coordinates:
+// - Tab switching between SEO, Keywords, Competitors, AI, and Settings views
+// - Page data scraping from the content script
+// - SEO scoring and keyword extraction
+// - AI suggestion generation via WebLLM
+// - Settings management and data export/import
+// =============================================================================
+import {
+  scoreSEO,
+  extractKeywords,
+  analyzeReadability,
+  estimateKeywordDifficulty,
+} from "./lib/seo.js";
+import {
+  classifyIntent,
+  estimateVolume,
+  suggestLongTail,
+  scoreKeyword,
+} from "./lib/keywords.js";
+import {
+  compareMetadata,
+  findContentGaps,
+  analyzeTagStrategy,
+} from "./lib/competitors.js";
+import {
+  MODELS,
+  DEFAULT_MODEL,
+  loadModel,
+  generateSuggestions,
+  isWebGPUAvailable,
+} from "./lib/engine.js";
+
+// =============================================================================
+// DOM helpers
+// =============================================================================
+const $ = (id) => document.getElementById(id);
+
+let pageData = null;
+let keywords = [];
+
+// =============================================================================
+// Tab switching
+// =============================================================================
+$("tabs").addEventListener("click", (e) => {
+  const tabBtn = e.target.closest(".tab");
+  if (!tabBtn) return;
+
+  // Update tab buttons
+  document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+  tabBtn.classList.add("active");
+
+  // Update tab content
+  const tabName = tabBtn.dataset.tab;
+  document.querySelectorAll(".tab-content").forEach((tc) => tc.classList.remove("active"));
+  $(`tab-${tabName}`).classList.add("active");
+});
+
+// =============================================================================
+// GPU badge
+// =============================================================================
+const gpuBadge = $("gpu-badge");
+if (isWebGPUAvailable()) {
+  gpuBadge.textContent = "WebGPU ✓";
+  gpuBadge.classList.add("ok");
+} else {
+  gpuBadge.textContent = "No WebGPU";
+  gpuBadge.classList.add("no");
+}
+
+// =============================================================================
+// Model dropdown (main + settings)
+// =============================================================================
+function populateModelDropdowns() {
+  [($("model-select"), $("setting-model"))].forEach((sel) => {
+    if (!sel) return;
+    sel.innerHTML = "";
+    for (const [id, label] of Object.entries(MODELS)) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = label;
+      sel.appendChild(opt);
+    }
+    sel.value = DEFAULT_MODEL;
+  });
+}
+populateModelDropdowns();
+
+// =============================================================================
+// Settings — load and bind
+// =============================================================================
+async function loadSettings() {
+  try {
+    const settings = await chrome.runtime.sendMessage({ type: "GET_SETTINGS" });
+    if (settings) {
+      $("setting-auto").checked = settings.autoAnalyze !== false;
+      $("setting-badge").checked = settings.showScoreBadge !== false;
+      $("setting-sidebar").checked = settings.enableSidebar !== false;
+      $("setting-ai").checked = settings.useAI !== false;
+      if (settings.model && $("setting-model")) {
+        $("setting-model").value = settings.model;
+      }
+    }
+  } catch (e) {
+    console.log("[settings] Could not load:", e.message);
+  }
+}
+
+async function saveSettings() {
+  const settings = {
+    autoAnalyze: $("setting-auto").checked,
+    showScoreBadge: $("setting-badge").checked,
+    enableSidebar: $("setting-sidebar").checked,
+    useAI: $("setting-ai").checked,
+    model: $("setting-model")?.value || DEFAULT_MODEL,
+  };
+  try {
+    await chrome.runtime.sendMessage({ type: "SAVE_SETTINGS", settings });
+  } catch (e) {
+    console.log("[settings] Could not save:", e.message);
+  }
+}
+
+// Bind settings change events
+document.querySelectorAll("#tab-settings input[type=checkbox]").forEach((el) => {
+  el.addEventListener("change", saveSettings);
+});
+$("setting-model")?.addEventListener("change", saveSettings);
+
+// =============================================================================
+// Scrape the active tab
+// =============================================================================
+async function getActiveTab() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tab;
+}
+
+async function scrapeCurrentPage(retries = 2) {
+  const tab = await getActiveTab();
+  if (!tab || !tab.url) return null;
+
+  const isYouTube =
+    /youtube\.com/.test(tab.url) || /youtu\.be/.test(tab.url);
+  if (!isYouTube) return { ok: false, notYouTube: true };
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await chrome.tabs.sendMessage(tab.id, { type: "SCRAPE_PAGE" });
+    } catch (err) {
+      if (attempt < retries) {
+        // Content script not injected — inject it
+        try {
+          // Determine which content script to inject based on URL
+          let file = "content/watch.js";
+          if (tab.url.includes("studio.youtube.com")) file = "content/studio.js";
+          else if (tab.url.includes("/results")) file = "content/search.js";
+          else if (
+            tab.url.includes("/channel") ||
+            tab.url.includes("/c/") ||
+            tab.url.includes("/@")
+          ) {
+            file = "content/channel.js";
+          }
+
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: [file],
+          });
+          // Wait a moment for script initialization
+          await new Promise((r) => setTimeout(r, 500));
+        } catch (injectErr) {
+          console.log("[scrape] Injection error:", injectErr.message);
+        }
+      } else {
+        return { ok: false, error: err.message };
+      }
+    }
+  }
+  return { ok: false, error: "Max retries exceeded" };
+}
+
+// =============================================================================
+// Render SEO score
+// =============================================================================
+function renderScore(data) {
+  if (!data?.title && !data?.description) {
+    $("score-num").textContent = "N/A";
+    $("score-grade").textContent = "SEO: No data";
+    $("score-sub").textContent = "Could not extract video metadata";
+    return;
+  }
+
+  const { score, grade, passed, total, checks } = scoreSEO(data);
+  const ring = $("score-ring");
+  const col =
+    score >= 75 ? "var(--good)" : score >= 55 ? "var(--warn)" : "var(--bad)";
+  ring.style.setProperty("--val", score);
+  ring.style.setProperty("--col", col);
+  $("score-num").textContent = score;
+  $("score-grade").textContent = `SEO: ${grade}`;
+  $("score-sub").textContent = `${passed} of ${total} checks passed`;
+
+  const list = $("checklist");
+  list.innerHTML = "";
+  for (const c of checks) {
+    const li = document.createElement("li");
+    li.className = c.pass ? "pass" : "fail";
+    li.innerHTML = `<span class="icon">${c.pass ? "✓" : "!"}</span>
+      <span>${c.label}${c.pass ? "" : ` — <span class="hint">${c.hint}</span>`}</span>`;
+    list.appendChild(li);
+  }
+}
+
+// =============================================================================
+// Render readability
+// =============================================================================
+function renderReadability(data) {
+  const readability = analyzeReadability(data?.description);
+  const el = $("readability-score");
+  if (readability.score === 0) {
+    el.textContent = "Description too short for analysis (need 50+ chars)";
+    return;
+  }
+  el.innerHTML = `
+    <div>Score: ${readability.score}/100 — <strong>${readability.level}</strong></div>
+    <div class="muted small">${readability.words} words · ${readability.sentences} sentences · ${readability.avgWordsPerSentence} words/sentence</div>
+  `;
+}
+
+// =============================================================================
+// Render video info
+// =============================================================================
+function renderVideoInfo(data) {
+  const el = $("video-info");
+  if (!data) {
+    el.textContent = "No video data available";
+    return;
+  }
+  const s = data.stats || {};
+  el.innerHTML = `
+    <div><strong>Title:</strong> ${data.title || "(none)"}</div>
+    <div><strong>Channel:</strong> ${s.channel || "(unknown)"}</div>
+    <div><strong>Views:</strong> ${s.views?.toLocaleString() || "N/A"} · 
+         <strong>Likes:</strong> ${s.likes?.toLocaleString() || "N/A"}</div>
+    <div><strong>Tags:</strong> ${(data.tags || []).length} tags</div>
+    <div><strong>Published:</strong> ${s.published || "N/A"}</div>
+    ${data.videoId ? `<div><strong>Video ID:</strong> ${data.videoId}</div>` : ""}
+  `;
+}
+
+// =============================================================================
+// Render keywords
+// =============================================================================
+function renderKeywords(data) {
+  keywords = extractKeywords(data);
+  const container = $("keywords-container");
+  container.innerHTML = "";
+
+  if (keywords.length === 0) {
+    container.innerHTML = `<span class="muted small">No keywords detected.</span>`;
+    return;
+  }
+
+  for (const k of keywords) {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.textContent = k.word;
+    chip.title = `Score: ${k.score} · ${k.type} · Click to copy`;
+    chip.onclick = () => copyText(chip, k.word);
+    container.appendChild(chip);
+  }
+}
+
+// =============================================================================
+// Copy to clipboard
+// =============================================================================
+function copyText(el, text) {
+  navigator.clipboard.writeText(text).catch(() => {});
+  el.classList.add("copied");
+  setTimeout(() => el.classList.remove("copied"), 800);
+}
+
+$("btn-copy-keywords")?.addEventListener("click", () => {
+  const text = keywords.map((k) => k.word).join(", ");
+  navigator.clipboard.writeText(text).catch(() => {});
+  $("btn-copy-keywords").textContent = "Copied!";
+  setTimeout(() => {
+    $("btn-copy-keywords").textContent = "Copy all keywords";
+  }, 1500);
+});
+
+// =============================================================================
+// Keyword research
+// =============================================================================
+$("btn-research-keyword")?.addEventListener("click", async () => {
+  const input = $("keyword-input");
+  const kw = input.value.trim();
+  if (!kw) return;
+
+  const resultsEl = $("keyword-research-results");
+  const longtailEl = $("longtail-results");
+
+  // Score the keyword
+  const scored = scoreKeyword(kw, pageData?.tags || []);
+  resultsEl.innerHTML = `
+    <div style="margin-bottom:8px">
+      <strong>Intent:</strong> ${scored.intent.intent} (${scored.intent.confidence}% confidence)
+    </div>
+    <div style="margin-bottom:8px">
+      <strong>Est. volume:</strong> ${scored.volume.volume}/mo · <strong>Opportunity:</strong> ${scored.opportunity}/100
+    </div>
+    <div style="margin-bottom:8px">
+      <strong>Relevancy:</strong> ${scored.relevancy}% · <strong>Specificity:</strong> ${scored.specificity}% · <strong>Competition:</strong> ${scored.competition}%
+    </div>
+  `;
+
+  // Show long-tail suggestions
+  const longtail = suggestLongTail(kw);
+  longtailEl.innerHTML =
+    `<strong>Long-tail variations</strong><br/>` +
+    longtail
+      .slice(0, 15)
+      .map(
+        (s) =>
+          `<span class="chip" onclick="navigator.clipboard.writeText('${s.replace(
+            /'/g,
+            "\\'"
+          )}')">${s}</span>`
+      )
+      .join("");
+});
+
+// =============================================================================
+// AI generation
+// =============================================================================
+$("btn-generate")?.addEventListener("click", async () => {
+  if (!isWebGPUAvailable()) {
+    $("ai-not-available").classList.remove("hidden");
+    return;
+  }
+  $("ai-not-available").classList.add("hidden");
+
+  const btn = $("btn-generate");
+  const progress = $("ai-progress");
+  const fill = $("bar-fill");
+  const ptext = $("progress-text");
+  const results = $("ai-results");
+
+  btn.disabled = true;
+  progress.classList.remove("hidden");
+  results.innerHTML = "";
+
+  try {
+    const modelId = $("model-select")?.value || DEFAULT_MODEL;
+
+    await loadModel(modelId, (report) => {
+      const pct = Math.round((report.progress || 0) * 100);
+      fill.style.width = pct + "%";
+      ptext.textContent = report.text || `Loading model… ${pct}%`;
+    });
+
+    ptext.textContent = "Generating suggestions…";
+    fill.style.width = "100%";
+
+    const out = await generateSuggestions({
+      title: pageData?.title,
+      description: pageData?.description,
+      keywords: keywords.map((k) => k.word),
+    });
+
+    renderAI(out);
+  } catch (e) {
+    results.innerHTML = `<p class="muted small">Generation failed: ${e.message || e}</p>`;
+  } finally {
+    btn.disabled = false;
+    progress.classList.add("hidden");
+    fill.style.width = "0%";
+  }
+});
+
+// =============================================================================
+// Render AI results
+// =============================================================================
+function renderAI({ titles, tags, description, hashtags }) {
+  const results = $("ai-results");
+  results.innerHTML = "";
+
+  if (titles?.length) {
+    const block = document.createElement("div");
+    block.className = "ai-block";
+    block.innerHTML = "<h3>Suggested titles (click to copy)</h3>";
+    titles.forEach((t) => {
+      const item = document.createElement("div");
+      item.className = "ai-item";
+      item.textContent = t;
+      item.onclick = () => copyText(item, t);
+      block.appendChild(item);
+    });
+    results.appendChild(block);
+  }
+
+  if (tags?.length) {
+    const block = document.createElement("div");
+    block.className = "ai-block";
+    block.innerHTML = "<h3>Suggested tags (click to copy all)</h3>";
+    const item = document.createElement("div");
+    item.className = "ai-item";
+    item.textContent = tags.join(", ");
+    item.onclick = () => copyText(item, tags.join(", "));
+    block.appendChild(item);
+    results.appendChild(block);
+  }
+
+  if (hashtags?.length) {
+    const block = document.createElement("div");
+    block.className = "ai-block";
+    block.innerHTML = "<h3>Hashtags (click to copy all)</h3>";
+    const item = document.createElement("div");
+    item.className = "ai-item";
+    item.textContent = hashtags.join(" ");
+    item.onclick = () => copyText(item, hashtags.join(" "));
+    block.appendChild(item);
+    results.appendChild(block);
+  }
+
+  if (description) {
+    const block = document.createElement("div");
+    block.className = "ai-block";
+    block.innerHTML = "<h3>Suggested description (click to copy)</h3>";
+    const item = document.createElement("div");
+    item.className = "ai-item";
+    item.style.whiteSpace = "pre-wrap";
+    item.textContent = description.slice(0, 1000);
+    item.onclick = () => copyText(item, description);
+    block.appendChild(item);
+    results.appendChild(block);
+  }
+}
+
+// =============================================================================
+// Competitor tab — compare two sets of data
+// =============================================================================
+async function renderCompetitorTab() {
+  // For now, just show a comparison of current video against stored channel data
+  if (!pageData?.tags?.length) {
+    return;
+  }
+
+  const analysis = analyzeTagStrategy(pageData.tags);
+  const el = $("competitor-analysis");
+  el.innerHTML = `
+    <div style="margin-bottom:8px">
+      <strong>Tag strategy breakdown:</strong>
+    </div>
+    <div>Broad tags: <strong>${analysis.broad.length}</strong></div>
+    <div>Specific tags: <strong>${analysis.specific.length}</strong></div>
+    <div>Long-tail tags: <strong>${analysis.longTail.length}</strong></div>
+    <div style="margin-top:8px;color:#9aa3b2;font-size:12px">
+      Balanced tag strategies include a mix of broad discovery terms and specific long-tail phrases.
+    </div>
+  `;
+}
+
+// =============================================================================
+// Re-analyze / Refresh buttons
+// =============================================================================
+$("btn-reanalyze")?.addEventListener("click", async () => {
+  await initPopup(true);
+});
+
+$("btn-refresh")?.addEventListener("click", async () => {
+  await initPopup(true);
+});
+
+// =============================================================================
+// Export / Import
+// =============================================================================
+$("btn-export")?.addEventListener("click", async () => {
+  try {
+    const result = await chrome.runtime.sendMessage({ type: "EXPORT_DATA" });
+    if (result.ok) {
+      const blob = new Blob([JSON.stringify(result.data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `opentube-seo-export-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  } catch (e) {
+    console.log("[export] Error:", e.message);
+  }
+});
+
+$("btn-import")?.addEventListener("click", () => {
+  $("import-file").click();
+});
+
+$("import-file")?.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const result = await chrome.runtime.sendMessage({
+      type: "IMPORT_DATA",
+      data,
+    });
+    if (result.ok) {
+      alert(`Imported ${result.imported} data sections.`);
+    }
+  } catch (err) {
+    alert("Import failed: " + err.message);
+  }
+
+  // Reset the file input
+  e.target.value = "";
+});
+
+// =============================================================================
+// Init — load current page data and render everything
+// =============================================================================
+async function initPopup(forceRefresh = false) {
+  // Scrape the page
+  pageData = await scrapeCurrentPage();
+
+  if (!pageData || pageData.notYouTube) {
+    $("not-youtube").classList.remove("hidden");
+    $("app").classList.add("hidden");
+    return;
+  }
+
+  if (!pageData.ok) {
+    $("not-youtube").classList.remove("hidden");
+    $("not-youtube").querySelector(".empty-state p").textContent =
+      "Could not load page data";
+    $("not-youtube").querySelector(".empty-state p + p").textContent =
+      pageData.error || "Unknown error. Try refreshing the YouTube page.";
+    $("app").classList.add("hidden");
+    return;
+  }
+
+  $("not-youtube").classList.add("hidden");
+  $("app").classList.remove("hidden");
+
+  // Render all sections
+  renderScore(pageData);
+  renderReadability(pageData);
+  renderVideoInfo(pageData);
+  renderKeywords(pageData);
+  renderCompetitorTab();
+
+  // Enable AI generate button if WebGPU is available
+  if (isWebGPUAvailable() && pageData?.title) {
+    $("btn-generate").disabled = false;
+  }
+}
+
+// =============================================================================
+// Bootstrap
+// =============================================================================
+(async function () {
+  await loadSettings();
+  await initPopup();
+})();

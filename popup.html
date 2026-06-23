@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="popup.css" />
+  <title>OpenTube SEO</title>
+</head>
+<body>
+  <!-- ======== HEADER ======== -->
+  <header class="header">
+    <div class="brand">
+      <span class="logo">OT</span>
+      <div>
+        <h1>OpenTube SEO</h1>
+        <p class="tagline">100% offline · open source · zero tracking</p>
+      </div>
+    </div>
+    <span id="gpu-badge" class="badge">…</span>
+  </header>
+
+  <!-- ======== NOT ON YOUTUBE ======== -->
+  <section id="not-youtube" class="panel hidden">
+    <div class="empty-state">
+      <span class="empty-icon">▶</span>
+      <p><strong>Open a YouTube page</strong></p>
+      <p class="muted small">Navigate to any YouTube video, channel, or search result.</p>
+    </div>
+  </section>
+
+  <!-- ======== MAIN CONTENT ======== -->
+  <section id="app" class="panel hidden">
+
+    <!-- ======== TABS ======== -->
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="seo">SEO</button>
+      <button class="tab" data-tab="keywords">Keywords</button>
+      <button class="tab" data-tab="competitors">Competitors</button>
+      <button class="tab" data-tab="ai">AI</button>
+      <button class="tab" data-tab="settings">⚙</button>
+    </nav>
+
+    <!-- ======== TAB: SEO Score ======== -->
+    <div id="tab-seo" class="tab-content active">
+      <div class="card">
+        <div class="score-row">
+          <div class="score-ring" id="score-ring">
+            <span id="score-num">–</span>
+          </div>
+          <div>
+            <h2 id="score-grade">SEO Score</h2>
+            <p id="score-sub" class="muted small">Analyzing…</p>
+          </div>
+        </div>
+        <div class="score-actions">
+          <button id="btn-reanalyze" class="btn small">Re-analyze</button>
+          <button id="btn-refresh" class="btn small">↻ Refresh page data</button>
+        </div>
+        <ul id="checklist" class="checklist"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Readability</h2>
+        <div id="readability-score" class="muted small">Analyzing…</div>
+      </div>
+
+      <div class="card">
+        <h2>Video Info</h2>
+        <div id="video-info" class="muted small">Loading…</div>
+      </div>
+    </div>
+
+    <!-- ======== TAB: Keywords ======== -->
+    <div id="tab-keywords" class="tab-content">
+      <div class="card">
+        <h2>Extracted keywords</h2>
+        <div id="keywords-container" class="chips"></div>
+        <button id="btn-copy-keywords" class="btn small">Copy all keywords</button>
+      </div>
+
+      <div class="card">
+        <h2>Keyword research</h2>
+        <div class="input-row">
+          <input type="text" id="keyword-input" placeholder="Enter a keyword to research…" />
+          <button id="btn-research-keyword" class="btn primary small">Research</button>
+        </div>
+        <div id="keyword-research-results" class="muted small">Enter a keyword above to see suggestions, volume estimates, and related terms.</div>
+      </div>
+
+      <div class="card">
+        <h2>Long-tail suggestions</h2>
+        <div id="longtail-results" class="muted small">Research a keyword to see long-tail variations.</div>
+      </div>
+    </div>
+
+    <!-- ======== TAB: Competitors ======== -->
+    <div id="tab-competitors" class="tab-content">
+      <div class="card">
+        <h2>Tag comparison</h2>
+        <p class="muted small">Compare your video tags against competitors to find content gaps and optimization opportunities.</p>
+        <div id="competitor-analysis" class="muted small" style="margin-top:8px">
+          Open two YouTube videos to compare their SEO metadata side by side.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Content gap analyzer</h2>
+        <p class="muted small">Discover keywords and topics your competitors rank for that you don't.</p>
+        <div id="content-gaps" class="muted small" style="margin-top:8px">
+          Enable competitor tracking in settings to see content gaps.
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== TAB: AI ======== -->
+    <div id="tab-ai" class="tab-content">
+      <div class="card">
+        <h2>AI suggestions</h2>
+        <p class="muted small">Generate optimized titles, tags, descriptions, and hashtags using local AI.</p>
+        <div class="ai-head">
+          <select id="model-select" class="select"></select>
+        </div>
+        <button id="btn-generate" class="btn primary" disabled>Generate with local AI</button>
+        <div id="ai-progress" class="progress hidden">
+          <div class="bar"><div id="bar-fill" class="bar-fill"></div></div>
+          <p id="progress-text" class="muted small"></p>
+        </div>
+        <div id="ai-results" class="ai-results"></div>
+        <div id="ai-not-available" class="hidden muted small">
+          WebGPU is not available. Use <strong>Chrome 116+</strong> or <strong>Edge 116+</strong> with WebGPU enabled.
+          In Brave, enable <code>#enable-unsafe-webgpu</code> at brave://flags.
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== TAB: Settings ======== -->
+    <div id="tab-settings" class="tab-content">
+      <div class="card">
+        <h2>Settings</h2>
+
+        <label class="setting-row">
+          <span>Auto-analyze on video page</span>
+          <input type="checkbox" id="setting-auto" checked />
+        </label>
+
+        <label class="setting-row">
+          <span>Show SEO score badge on pages</span>
+          <input type="checkbox" id="setting-badge" checked />
+        </label>
+
+        <label class="setting-row">
+          <span>Enable Studio sidebar panel</span>
+          <input type="checkbox" id="setting-sidebar" checked />
+        </label>
+
+        <label class="setting-row">
+          <span>Use AI generation (requires WebGPU)</span>
+          <input type="checkbox" id="setting-ai" checked />
+        </label>
+
+        <div class="setting-row">
+          <span>AI model</span>
+          <select id="setting-model" class="select" style="width:auto"></select>
+        </div>
+
+        <hr class="divider" />
+
+        <button id="btn-export" class="btn small">Export data</button>
+        <button id="btn-import" class="btn small">Import data</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== FOOTER ======== -->
+  <footer class="footer">
+    <span class="muted small">OpenTube SEO v2.0 · 100% local</span>
+    <a href="options.html" target="_blank" class="muted small" style="color:#9aa3b2">Full options</a>
+  </footer>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

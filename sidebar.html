@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="sidebar.css" />
+  <title>OpenTube SEO Sidebar</title>
+</head>
+<body>
+  <!-- ======== HEADER ======== -->
+  <header class="header">
+    <div class="brand">
+      <span class="logo">OT</span>
+      <div>
+        <h1>OpenTube SEO</h1>
+        <p class="tagline">Sidebar · always-on SEO insights</p>
+      </div>
+    </div>
+    <button id="btn-close" class="icon-btn" title="Close sidebar">✕</button>
+  </header>
+
+  <!-- ======== CONTENT ======== -->
+  <main id="content">
+    <section id="not-watch" class="panel">
+      <div class="empty-state">
+        <p class="muted">Open a YouTube video page to see insights here.</p>
+      </div>
+    </section>
+
+    <section id="watch-panel" class="panel hidden">
+      <!-- Live score card -->
+      <div class="card">
+        <div class="score-row">
+          <div class="score-ring" id="sidebar-score-ring">
+            <span id="sidebar-score-num">–</span>
+          </div>
+          <div>
+            <h2 id="sidebar-score-grade">SEO Score</h2>
+            <p id="sidebar-score-sub" class="muted small">Analyzing…</p>
+          </div>
+        </div>
+        <button id="sidebar-btn-optimize" class="btn primary full">Optimize with AI</button>
+      </div>
+
+      <!-- Quick keywords -->
+      <div class="card">
+        <h2>Top keywords</h2>
+        <div id="sidebar-keywords" class="chips">Loading…</div>
+      </div>
+
+      <!-- Checklist -->
+      <div class="card">
+        <h2>Checklist</h2>
+        <ul id="sidebar-checklist" class="checklist"></ul>
+      </div>
+
+      <!-- Suggestions -->
+      <div id="sidebar-ai-results" class="card hidden">
+        <h2>AI Suggestions</h2>
+        <div id="sidebar-ai-content"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======== FOOTER ======== -->
+  <footer class="footer">
+    <span class="muted small">OpenTube SEO v2.0</span>
+    <span id="sidebar-gpu" class="badge">No WebGPU</span>
+  </footer>
+
+  <script type="module" src="sidebar.js"></script>
+</body>
+</html>

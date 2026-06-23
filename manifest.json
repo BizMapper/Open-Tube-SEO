@@ -1,0 +1,105 @@
+{
+  "manifest_version": 3,
+  "name": "OpenTube SEO — Complete VidIQ Alternative",
+  "version": "2.0.0",
+  "description": "Full-featured, offline-first YouTube SEO toolkit. Local AI title/tag/description generation, keyword research, competitor analysis, thumbnail scoring, channel analytics, trend tracking, and A/B testing — all running 100% in your browser via WebGPU. No account, no tracking, no limits.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "sidePanel",
+    "tabs",
+    "downloads",
+    "contextMenus",
+    "alarms",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "https://*.youtube.com/*",
+    "https://*.youtube-nocookie.com/*",
+    "https://huggingface.co/*",
+    "https://*.hf.co/*",
+    "https://raw.githubusercontent.com/*",
+    "https://cdn.jsdelivr.net/*",
+    "https://unpkg.com/*"
+  ],
+  "action": {
+    "default_title": "OpenTube SEO",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.youtube.com/watch*"],
+      "js": ["content/watch.js"],
+      "run_at": "document_idle",
+      "css": ["content/watch.css"]
+    },
+    {
+      "matches": ["https://studio.youtube.com/*"],
+      "js": ["content/studio.js"],
+      "run_at": "document_idle",
+      "css": ["content/studio.css"]
+    },
+    {
+      "matches": ["https://*.youtube.com/results*"],
+      "js": ["content/search.js"],
+      "run_at": "document_idle",
+      "css": ["content/search.css"]
+    },
+    {
+      "matches": ["https://*.youtube.com/channel/*", "https://*.youtube.com/c/*", "https://*.youtube.com/@*"],
+      "js": ["content/channel.js"],
+      "run_at": "document_idle",
+      "css": ["content/channel.css"]
+    },
+    {
+      "matches": ["https://*.youtube.com/feed/*"],
+      "js": ["content/feed.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["vendor/*", "models/*", "assets/*"],
+      "matches": ["https://*.youtube.com/*"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; worker-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net https://unpkg.com;"
+  },
+  "options_page": "options.html",
+  "commands": {
+    "open-sidebar": {
+      "suggested_key": { "default": "Alt+Shift+O" },
+      "description": "Open OpenTube SEO sidebar"
+    },
+    "analyze-video": {
+      "suggested_key": { "default": "Alt+Shift+A" },
+      "description": "Analyze current video SEO"
+    },
+    "generate-tags": {
+      "suggested_key": { "default": "Alt+Shift+G" },
+      "description": "Generate AI tags for current video"
+    }
+  },
+  "minimum_chrome_version": "116",
+  "incognito": "split",
+  "update_url": "https://clients2.google.com/service/update2/crx"
+}

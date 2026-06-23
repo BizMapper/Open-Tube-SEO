@@ -1,0 +1,166 @@
+/* =============================================================================
+   sidebar.css — Sidebar Panel Styles
+   ============================================================================= */
+:root {
+  --bg: #0f1115;
+  --card: #171a21;
+  --border: #262b36;
+  --fg: #e8eaed;
+  --muted: #9aa3b2;
+  --primary: #ef4444;
+  --good: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --chip-bg: #20242d;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-y: auto;
+}
+
+body::-webkit-scrollbar { width: 4px; }
+body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+.header h1 { font-size: 13px; }
+.tagline { font-size: 11px; color: var(--muted); }
+
+.icon-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+}
+.icon-btn:hover { color: var(--fg); border-color: var(--fg); }
+
+.panel { padding: 12px; }
+
+.empty-state { text-align: center; padding: 32px 12px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card h2 { font-size: 13px; font-weight: 600; }
+
+.score-row { display: flex; align-items: center; gap: 12px; }
+.score-ring {
+  --val: 0; --col: var(--muted);
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: conic-gradient(var(--col) calc(var(--val) * 1%), var(--border) 0);
+}
+.score-ring span {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  font-size: 11px; padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--primary); }
+.chip.copied { border-color: var(--good) !important; }
+
+.checklist { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.checklist li {
+  display: flex; gap: 6px; align-items: flex-start;
+  font-size: 12px;
+}
+.checklist .pass .icon { color: var(--good); }
+.checklist .fail .icon { color: var(--warn); }
+
+.btn {
+  border: none; border-radius: 8px;
+  padding: 9px 12px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.btn.primary { background: var(--primary); color: white; }
+.btn.full { width: 100%; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.badge {
+  font-size: 11px; padding: 2px 7px;
+  border-radius: 999px; border: 1px solid var(--border);
+  color: var(--muted);
+}
+.badge.ok { color: var(--good); border-color: var(--good); }
+.badge.no { color: var(--bad); border-color: var(--bad); }
+
+.ai-sidebar-item {
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.ai-sidebar-item:hover { border-color: var(--primary); }
+.ai-sidebar-item.copied { border-color: var(--good) !important; }
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+}

@@ -1,0 +1,344 @@
+/* =============================================================================
+   popup.css — OpenTube SEO Popup Styles
+   =============================================================================
+   Dark theme, compact layout for the 380px-wide popup.
+   Uses CSS custom properties for easy theming.
+   ============================================================================= */
+
+:root {
+  --bg: #0f1115;
+  --card: #171a21;
+  --border: #262b36;
+  --fg: #e8eaed;
+  --muted: #9aa3b2;
+  --primary: #ef4444;
+  --primary-fg: #ffffff;
+  --good: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --chip-bg: #20242d;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 400px;
+  max-height: 600px;
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Scrollbar */
+body::-webkit-scrollbar { width: 4px; }
+body::-webkit-scrollbar-track { background: transparent; }
+body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+
+/* ======== HEADER ======== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  background: var(--primary);
+  color: var(--primary-fg);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+.header h1 { font-size: 14px; }
+.tagline { font-size: 11px; color: var(--muted); }
+
+.badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.badge.ok { color: var(--good); border-color: var(--good); }
+.badge.no { color: var(--bad); border-color: var(--bad); }
+
+/* ======== EMPTY STATE ======== */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--muted);
+}
+.empty-icon {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+/* ======== TABS ======== */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 14px;
+  margin-top: 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.tab {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+.tab:hover { color: var(--fg); }
+.tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ======== PANELS ======== */
+#app, .panel { padding: 0; }
+
+/* ======== CARDS ======== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card h2 {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ======== SCORE ======== */
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.score-ring {
+  --val: 0;
+  --col: var(--muted);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: conic-gradient(var(--col) calc(var(--val) * 1%), var(--border) 0);
+}
+.score-ring span {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.score-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ======== CHECKLIST ======== */
+.checklist {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.checklist li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12px;
+}
+.checklist .icon { flex-shrink: 0; font-weight: 700; }
+.checklist .pass .icon { color: var(--good); }
+.checklist .fail .icon { color: var(--warn); }
+.checklist .hint { color: var(--muted); font-size: 11px; }
+
+/* ======== CHIPS (keywords) ======== */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.chip:hover { border-color: var(--primary); }
+.chip.copied { border-color: var(--good) !important; }
+
+/* ======== INPUT ROW ======== */
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+.input-row input {
+  flex: 1;
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--fg);
+  font-size: 12px;
+  font-family: inherit;
+}
+.input-row input:focus { outline: none; border-color: var(--primary); }
+
+/* ======== BUTTONS ======== */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn.primary { background: var(--primary); color: var(--primary-fg); }
+.btn.small { padding: 5px 10px; font-size: 11px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ======== AI SECTION ======== */
+.ai-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.select {
+  background: var(--chip-bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 6px;
+  font-size: 11px;
+  font-family: inherit;
+  max-width: 200px;
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--primary);
+  transition: width 0.2s ease;
+}
+
+.ai-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ai-block h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.ai-item {
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 9px;
+  font-size: 12px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.ai-item:hover { border-color: var(--primary); }
+.ai-item.copied { border-color: var(--good) !important; }
+
+/* ======== SETTINGS ======== */
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+  cursor: pointer;
+}
+.setting-row input[type="checkbox"] {
+  accent-color: var(--primary);
+}
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+
+/* ======== FOOTER ======== */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+}

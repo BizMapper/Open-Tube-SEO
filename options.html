@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="options.css" />
+  <title>OpenTube SEO — Options</title>
+</head>
+<body>
+  <div class="container">
+    <!-- ======== HEADER ======== -->
+    <header class="page-header">
+      <h1>OpenTube SEO <span class="muted">v2.0.0</span></h1>
+      <p class="muted">Full-featured, offline-first YouTube SEO toolkit</p>
+    </header>
+
+    <!-- ======== MAIN LAYOUT ======== -->
+    <div class="layout">
+      <!-- Sidebar nav -->
+      <nav class="nav" id="nav">
+        <button class="nav-btn active" data-page="general">General</button>
+        <button class="nav-btn" data-page="ai">AI Model</button>
+        <button class="nav-btn" data-page="data">Data</button>
+        <button class="nav-btn" data-page="about">About</button>
+      </nav>
+
+      <!-- Pages -->
+      <div class="pages">
+
+        <!-- PAGE: General -->
+        <div id="page-general" class="page active">
+          <h2>General Settings</h2>
+
+          <label class="field">
+            <span class="field-label">Auto-analyze video pages</span>
+            <p class="field-desc">Automatically run SEO analysis when you open a YouTube video.</p>
+            <input type="checkbox" id="opt-auto-analyze" checked />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Show score badge</span>
+            <p class="field-desc">Display a small SEO score badge on YouTube video pages.</p>
+            <input type="checkbox" id="opt-show-badge" checked />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Enable Studio sidebar</span>
+            <p class="field-desc">Show SEO panel in YouTube Studio video editor.</p>
+            <input type="checkbox" id="opt-enable-sidebar" checked />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Enable AI features</span>
+            <p class="field-desc">Allow AI-powered title, tag, and description generation (requires WebGPU).</p>
+            <input type="checkbox" id="opt-enable-ai" checked />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Notifications</span>
+            <p class="field-desc">Send a notification when AI generation completes.</p>
+            <input type="checkbox" id="opt-notify" />
+          </label>
+
+          <div class="btn-row">
+            <button id="opt-save-general" class="btn primary">Save</button>
+          </div>
+        </div>
+
+        <!-- PAGE: AI Model -->
+        <div id="page-ai" class="page">
+          <h2>AI Model Configuration</h2>
+
+          <div class="field">
+            <span class="field-label">Model selection</span>
+            <p class="field-desc">Choose the AI model used for title/tag/description generation. Larger models give better results but require more memory.</p>
+            <select id="opt-model" class="select"></select>
+          </div>
+
+          <div class="field">
+            <span class="field-label">WebGPU status</span>
+            <p class="field-desc">WebGPU is required for local AI generation.</p>
+            <span id="opt-gpu-status" class="badge">Checking…</span>
+          </div>
+
+          <div id="opt-models" class="model-info">
+            <h3>Available Models</h3>
+            <table class="model-table">
+              <tr><td>Qwen2.5 0.5B</td><td>Smallest, fastest (~500MB)</td><td>Low-end GPUs</td></tr>
+              <tr><td>Llama 3.2 1B</td><td>Balanced (~800MB)</td><td>Most GPUs</td></tr>
+              <tr><td>Llama 3.2 3B</td><td>Best quality (~2GB)</td><td>High-end GPUs</td></tr>
+            </table>
+          </div>
+
+          <div class="btn-row">
+            <button id="opt-save-ai" class="btn primary">Save</button>
+          </div>
+        </div>
+
+        <!-- PAGE: Data -->
+        <div id="page-data" class="page">
+          <h2>Data Management</h2>
+
+          <div class="field">
+            <span class="field-label">Export data</span>
+            <p class="field-desc">Download all your settings, tracked keywords, and analysis history as a JSON file.</p>
+            <button id="opt-export" class="btn">Export data</button>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Import data</span>
+            <p class="field-desc">Restore previously exported data.</p>
+            <button id="opt-import" class="btn">Import data</button>
+            <input type="file" id="opt-import-file" accept=".json" style="display:none" />
+          </div>
+
+          <hr class="divider" />
+
+          <div class="field">
+            <span class="field-label">Clear all data</span>
+            <p class="field-desc">Remove all stored data including settings, keywords, and history.</p>
+            <button id="opt-clear" class="btn" style="border-color:#ef4444;color:#ef4444">Clear all data</button>
+          </div>
+        </div>
+
+        <!-- PAGE: About -->
+        <div id="page-about" class="page">
+          <h2>About OpenTube SEO</h2>
+
+          <div class="about-block">
+            <p>OpenTube SEO is a <strong>100% offline, open-source alternative to VidIQ</strong>.</p>
+            <p>All analysis runs in your browser — no data is ever sent to any server.</p>
+          </div>
+
+          <div class="about-block">
+            <h3>Features</h3>
+            <ul>
+              <li>SEO scoring with 18 heuristic checks</li>
+              <li>Keyword extraction and research</li>
+              <li>Competitor analysis and content gap detection</li>
+              <li>AI title/tag/description generation via WebLLM</li>
+              <li>YouTube Studio integration</li>
+              <li>Keyboard shortcuts</li>
+              <li>Data export/import</li>
+              <li>100% free and open source</li>
+            </ul>
+          </div>
+
+          <div class="about-block">
+            <h3>Technologies used</h3>
+            <ul>
+              <li><a href="https://github.com/DietrichGebert/ponytail" target="_blank">Ponytail</a> — AI agent coding style (write only what's needed)</li>
+              <li><a href="https://github.com/safishamsi/graphify" target="_blank">Graphify</a> — knowledge graph architecture patterns</li>
+              <li><a href="https://github.com/mlc-ai/web-llm" target="_blank">WebLLM</a> — browser-based AI inference via WebGPU</li>
+            </ul>
+          </div>
+
+          <div class="about-block">
+            <h3>Links</h3>
+            <ul>
+              <li><a href="https://github.com/BizMapper/Open-Tube-SEO" target="_blank">GitHub Repository</a></li>
+              <li><a href="https://github.com/BizMapper/Open-Tube-SEO/issues" target="_blank">Report an issue</a></li>
+            </ul>
+          </div>
+        </div>
+
+      </div><!-- /pages -->
+    </div><!-- /layout -->
+
+    <!-- Status message -->
+    <div id="status-message" class="status hidden"></div>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

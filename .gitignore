@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.zip
+.vscode/
+.DS_Store
+Thumbs.db
+models/
