@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![WebGPU](https://img.shields.io/badge/WebGPU-required-orange)
 
-OpenTube SEO is a full-featured Chrome extension that gives you **everything VidIQ offers** — for free, with no account, no tracking, and no limits. Every analysis runs in your browser.
+OpenTube SEO is a full-featured Chrome & Brave extension that gives you **everything VidIQ offers** — for free, with no account, no tracking, and no limits. Every analysis runs in your browser.
 
 Built upon the philosophies of [**Ponytail**](https://github.com/DietrichGebert/ponytail) (write only what's needed) and [**Graphify**](https://github.com/safishamsi/graphify) (knowledge graph architecture patterns).
 
