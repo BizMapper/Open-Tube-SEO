@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>OpenTube SEO</title>
+  </head>
+  <body>
+    <header class="header">
+      <div class="brand">
+        <span class="logo">OT</span>
+        <div>
+          <h1>OpenTube SEO</h1>
+          <p class="tagline">Offline AI · open source</p>
+        </div>
+      </div>
+      <span id="gpu-badge" class="badge">checking…</span>
+    </header>
+
+    <main id="app">
+      <section id="not-watch" class="panel hidden">
+        <p class="empty">Open a YouTube <strong>video page</strong> to analyze its SEO.</p>
+      </section>
+
+      <section id="content" class="panel hidden">
+        <!-- SEO score -->
+        <div class="card">
+          <div class="score-row">
+            <div class="score-ring" id="score-ring">
+              <span id="score-num">–</span>
+            </div>
+            <div>
+              <h2 id="score-grade">SEO Score</h2>
+              <p id="score-sub" class="muted">Analyzing current video…</p>
+            </div>
+          </div>
+          <ul id="checklist" class="checklist"></ul>
+        </div>
+
+        <!-- Keywords -->
+        <div class="card">
+          <h2>Top keywords</h2>
+          <div id="keywords" class="chips"></div>
+        </div>
+
+        <!-- AI generation -->
+        <div class="card">
+          <div class="ai-head">
+            <h2>AI suggestions</h2>
+            <select id="model-select" class="select"></select>
+          </div>
+          <button id="generate" class="btn primary">Generate with local AI</button>
+          <div id="ai-progress" class="progress hidden">
+            <div class="bar"><div id="bar-fill" class="bar-fill"></div></div>
+            <p id="progress-text" class="muted small"></p>
+          </div>
+          <div id="ai-results" class="ai-results"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="muted small">100% local · no account · no tracking</span>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
