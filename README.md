@@ -1,14 +1,17 @@
 # OpenTube SEO — Complete VidIQ Alternative
 
-> **100% offline · open source · zero tracking · unlimited use**
+> **100% offline · open source · zero tracking · unlimited use · Brave-ready**
 
 ![Version](https://img.shields.io/badge/version-2.0.0-red)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![WebGPU](https://img.shields.io/badge/WebGPU-required-orange)
+![Brave](https://img.shields.io/badge/Brave-ready-orange?logo=brave&color=#FB542B)
 
-OpenTube SEO is a full-featured Chrome & Brave extension that gives you **everything VidIQ offers** — for free, with no account, no tracking, and no limits. Every analysis runs in your browser.
+OpenTube SEO is a full-featured Chrome/Edge/Brave extension that gives you **everything VidIQ offers** — for free, with no account, no tracking, and no limits. Every analysis runs in your browser.
 
 Built upon the philosophies of [**Ponytail**](https://github.com/DietrichGebert/ponytail) (write only what's needed) and [**Graphify**](https://github.com/safishamsi/graphify) (knowledge graph architecture patterns).
+
+**Topics:** `youtube-seo` `vidiq-alternative` `chrome-extension` `brave-extension` `webgpu` `webllm` `seo-tool` `youtube-tags` `keyword-research` `offline-ai` `youtube-studio` `open-source` `ponytail` `graphify` `bizmapper`
 
 ---
 
@@ -74,12 +77,33 @@ Built upon the philosophies of [**Ponytail**](https://github.com/DietrichGebert/
 
 ---
 
-## Requirements
+## Browser Support
 
-- **Browser:** Chrome 116+ or Edge 116+
-- **WebGPU:** Required for AI features. Most modern GPUs are supported.
-  - In **Brave**: enable `#enable-unsafe-webgpu` at `brave://flags`
-  - In **Chrome**: WebGPU is enabled by default since Chrome 116
+| Browser | Status | Notes |
+|---------|--------|-------|
+| **Chrome** 116+ | ✅ Full support | WebGPU on by default |
+| **Edge** 116+ | ✅ Full support | WebGPU on by default |
+| **Brave** | ✅ Full support | WebGPU needs one-time flag enable (see below) |
+| **Opera** | ✅ Likely works | Chromium-based, untested |
+| **Firefox** | ❌ Not supported | No WebGPU support for AI features |
+
+### Enabling WebGPU in Brave
+
+Brave disables WebGPU by default for privacy. To enable it:
+
+1. Open `brave://flags` in the address bar
+2. Search for **"WebGPU"**
+3. Set **"Unsafe WebGPU"** to **Enabled**
+4. Also set **"WebGPU Developer Features"** to **Enabled** (if available)
+5. Relaunch Brave
+
+> **Note:** If you see a "WebGPU not available" message in the extension, this is the fix. The flag is named "unsafe" but refers to web API safety, not security — WebGPU runs in a sandbox just like WebGL.
+
+### Requirements
+
+- **Browser:** Chrome 116+, Edge 116+, or Brave (any recent version)
+- **WebGPU:** Required for AI generation features. SEO scoring and keyword analysis work without it.
+- **Screen width:** 400px+ for full popup experience
 
 ---
 
