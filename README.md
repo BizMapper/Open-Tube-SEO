@@ -36,7 +36,7 @@ Built upon the philosophies of [**Ponytail**](https://github.com/DietrichGebert/
 
 ## Installation
 
-### Option 1: Install from Chrome Web Store (recommended)
+### Option 1: Install from Chrome Web Store (recommended) - Not Active Yet
 
 1. Visit the [Chrome Web Store listing](https://chrome.google.com/webstore) (search "OpenTube SEO")
 2. Click **Add to Chrome**
