@@ -11,7 +11,7 @@ OpenTube SEO is a full-featured Chrome/Edge/Brave extension that gives you **eve
 
 Built upon the philosophies of [**Ponytail**](https://github.com/DietrichGebert/ponytail) (write only what's needed) and [**Graphify**](https://github.com/safishamsi/graphify) (knowledge graph architecture patterns).
 
-**Topics:** `youtube-seo` `vidiq-alternative` `chrome-extension` `brave-extension` `webgpu` `webllm` `seo-tool` `youtube-tags` `keyword-research` `offline-ai` `youtube-studio` `open-source` `ponytail` `graphify` `bizmapper`
+**Topics:** youtube-seo, vidiq-alternative, chrome-extension, brave-extension, webgpu, webllm, seo-tool, youtube-tags, keyword-research, offline-ai, youtube-studio, open-source, ponytail, graphify, bizmapper
 
 ---
 
