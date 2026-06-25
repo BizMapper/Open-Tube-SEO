@@ -77,7 +77,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["vendor/*", "models/*", "assets/*"],
+      "resources": ["vendor/*", "models/*", "assets/*", "lib/*"],
       "matches": ["https://*.youtube.com/*"]
     }
   ],

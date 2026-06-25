@@ -545,6 +545,17 @@ async function initPopup(forceRefresh = false) {
     return;
   }
 
+  if (pageData._empty) {
+    // Scraping returned but found no data — YouTube likely changed their DOM
+    $("not-youtube").classList.remove("hidden");
+    $("not-youtube").querySelector(".empty-state p").textContent =
+      "Could not read YouTube video data";
+    $("not-youtube").querySelector(".empty-state p + p").textContent =
+      "YouTube may have updated their layout. Try refreshing the page, or open a different video.";
+    $("app").classList.add("hidden");
+    return;
+  }
+
   $("not-youtube").classList.add("hidden");
   $("app").classList.remove("hidden");
 

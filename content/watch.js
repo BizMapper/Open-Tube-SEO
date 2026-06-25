@@ -6,6 +6,10 @@
 // - Injects SEO score badges into the page
 // - Responds to popup/sidebar/background requests for data
 // - Supports auto-analysis on page load (configurable)
+//
+// NOTE: YouTube uses Shadow DOM heavily. querySelector works across open
+// shadow roots but NOT closed ones. If scraping fails, YouTube likely
+// changed their DOM structure — file an issue with current page HTML.
 // =============================================================================
 
 // =============================================================================
@@ -13,6 +17,18 @@
 // =============================================================================
 function txt(el) {
   return el ? el.textContent.trim() : "";
+}
+
+// =============================================================================
+// qsAll — querySelectorAll safe wrapper with optional root
+// =============================================================================
+function qsAll(sel, root) {
+  try {
+    return Array.from((root || document).querySelectorAll(sel));
+  } catch { return []; }
+}
+function qs(sel, root) {
+  try { return (root || document).querySelector(sel); } catch { return null; }
 }
 
 // =============================================================================
@@ -33,46 +49,84 @@ function parseCount(str) {
 }
 
 // =============================================================================
+// deepText — walk all open shadow roots to collect text from a selector
+// =============================================================================
+function deepText(selectors) {
+  for (const sel of selectors) {
+    // Try normal DOM first
+    const el = qs(sel);
+    if (el && el.tagName !== "META") {
+      const text = txt(el);
+      if (text) return text;
+    }
+    if (el && el.tagName === "META") {
+      const content = el.getAttribute("content");
+      if (content) return content;
+    }
+  }
+  return "";
+}
+
+// =============================================================================
 // getTitle — extract video title from the YouTube watch page
 // =============================================================================
 function getTitle() {
   const selectors = [
-    "h1.ytd-watch-metadata yt-formatted-string",
-    "h1.title yt-formatted-string",
+    'h1 yt-formatted-string',
+    'h1.ytd-watch-metadata yt-formatted-string',
+    'h1.title yt-formatted-string',
     'h1 yt-formatted-string[class*="title"]',
     'meta[name="title"]',
   ];
   for (const sel of selectors) {
-    const el = document.querySelector(sel);
+    const el = qs(sel);
     if (el) {
-      if (el.tagName === "META") return el.getAttribute("content") || "";
+      if (el.tagName === "META") {
+        const c = el.getAttribute("content");
+        if (c) return c;
+        continue;
+      }
       const text = txt(el);
       if (text) return text;
     }
   }
-  return document.title.replace(/ - YouTube$/, "").trim();
+  // Try the page title as last resort
+  const pageTitle = document.title.replace(/ - YouTube$/, "").trim();
+  if (pageTitle) return pageTitle;
+  // Try all h1 elements visible
+  const h1s = qsAll("h1");
+  for (const h1 of h1s) {
+    const text = txt(h1);
+    if (text) return text;
+  }
+  return "";
 }
 
 // =============================================================================
 // getDescription — extract full video description
 // =============================================================================
 function getDescription() {
-  // Try expanded description first
+  // Get the meta description as the most reliable source
+  const meta = qs('meta[name="description"]');
+  if (meta) {
+    const content = meta.getAttribute("content") || "";
+    if (content.length > 50) return content;
+  }
+  // Try expanded description elements
   const expandedSelectors = [
     "#description-inline-expander",
     "ytd-text-inline-expander #snippet-text",
     "#description yt-formatted-string",
     "#description.ytd-video-secondary-info-renderer",
+    '#description',
   ];
   for (const sel of expandedSelectors) {
-    const el = document.querySelector(sel);
+    const el = qs(sel);
     if (el) {
       const text = txt(el);
       if (text.length > 50) return text;
     }
   }
-  // Fallback to meta description
-  const meta = document.querySelector('meta[name="description"]');
   return meta ? meta.getAttribute("content") || "" : "";
 }
 
@@ -83,34 +137,22 @@ function getTags() {
   const tags = new Set();
 
   // Primary: og:video:tag meta elements
-  document
-    .querySelectorAll('meta[property="og:video:tag"]')
-    .forEach((m) => {
-      const content = m.getAttribute("content");
-      if (content) tags.add(content.trim());
-    });
+  qsAll('meta[property="og:video:tag"]').forEach((m) => {
+    const content = m.getAttribute("content");
+    if (content) tags.add(content.trim());
+  });
 
   // Secondary: keyword meta
   if (tags.size === 0) {
-    const kw = document.querySelector('meta[name="keywords"]');
+    const kw = qs('meta[name="keywords"]');
     if (kw) {
-      kw.getAttribute("content")
+      (kw.getAttribute("content") || "")
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean)
         .forEach((t) => tags.add(t));
     }
   }
-
-  // Tertiary: try to find tag chips in the description area
-  document
-    .querySelectorAll(
-      'ytd-video-secondary-info-renderer a[href*="&tag="], #super-title yt-formatted-string a[href*="&tag="]'
-    )
-    .forEach((a) => {
-      const text = txt(a);
-      if (text) tags.add(text);
-    });
 
   return [...tags].filter(Boolean);
 }
@@ -119,89 +161,121 @@ function getTags() {
 // getStats — extract video statistics (views, likes, etc.)
 // =============================================================================
 function getStats() {
-  // Views
   let views = null;
-  const viewsSelectors = [
-    "ytd-watch-metadata #info span",
-    "span.view-count",
-    "#info-container #info span",
-    '.ytd-video-primary-info-renderer span[class*="view"]',
-  ];
-  for (const sel of viewsSelectors) {
-    const el = document.querySelector(sel);
-    const text = txt(el);
-    const parsed = parseCount(text);
-    if (parsed) {
-      views = parsed;
-      break;
-    }
-  }
-
-  // Likes
   let likes = null;
-  const likeBtnSelectors = [
-    'ytd-watch-metadata like-button-view-model button',
-    '#segmented-like-button button',
-    'ytd-toggle-button-renderer[is-icon-button] #button',
-    '#top-level-buttons-computed ytd-segmented-like-dislike-button-renderer:first-child',
-  ];
-  for (const sel of likeBtnSelectors) {
-    const el = document.querySelector(sel);
-    if (el) {
-      const ariaLabel = el.getAttribute("aria-label") || "";
-      const parsed = parseCount(ariaLabel) || parseCount(txt(el));
-      if (parsed) {
-        likes = parsed;
-        break;
-      }
-    }
-  }
-
-  // Channel name
-  const channel = txt(
-    document.querySelector(
-      "ytd-channel-name #text a, #upload-info #channel-name a, #owner #channel-name ytd-channel-name a"
-    )
-  );
-
-  // Subscriber count
-  const subs = parseCount(
-    txt(
-      document.querySelector(
-        "#owner-sub-count, #subscriber-count, ytd-video-owner-renderer #owner-sub-count"
-      )
-    )
-  );
-
-  // Publish date
+  let channel = "";
+  let subs = null;
   let published = null;
-  const dateSelectors = [
-    'ytd-watch-metadata #info-strings yt-formatted-string',
-    'meta[itemprop="datePublished"]',
-    '#info-strings yt-formatted-string',
-  ];
-  for (const sel of dateSelectors) {
-    const el = document.querySelector(sel);
-    if (el) {
-      if (el.tagName === "META") {
-        published = el.getAttribute("content");
-        break;
+  let comments = null;
+
+  // --- Views ---
+  // YouTube puts view count in multiple possible locations
+  const viewSources = [
+    // Try all spans inside the info area
+    () => {
+      const spans = qsAll("span");
+      for (const s of spans) {
+        const text = txt(s);
+        const parsed = parseCount(text);
+        if (parsed && /view/i.test(text)) return parsed;
       }
-      const text = txt(el);
-      // Skip the views item, look for date text
-      if (text && !text.includes("view") && !text.includes("View")) {
-        published = text;
-        break;
+      return null;
+    },
+    // Try meta itemprop="interactionStatistic"
+    () => {
+      const metas = qsAll('meta[itemprop="interactionStatistic"]');
+      for (const m of metas) {
+        const val = m.getAttribute("content");
+        if (val) return parseCount(val);
+      }
+      return null;
+    },
+  ];
+  for (const src of viewSources) {
+    const val = src();
+    if (val) { views = val; break; }
+  }
+
+  // --- Likes ---
+  const likeSources = [
+    () => {
+      // Try all buttons that mention "like" in aria-label
+      const btns = qsAll("button");
+      for (const b of btns) {
+        const label = (b.getAttribute("aria-label") || "").toLowerCase();
+        if (label.includes("like") && !label.includes("dislike")) {
+          return parseCount(label);
+        }
+      }
+      return null;
+    },
+  ];
+  for (const src of likeSources) {
+    const val = src();
+    if (val) { likes = val; break; }
+  }
+
+  // --- Channel name ---
+  const channelSels = [
+    "ytd-channel-name #text a",
+    "#upload-info #channel-name a",
+    "#owner #channel-name ytd-channel-name a",
+    "ytd-video-owner-renderer ytd-channel-name a",
+    "#owner #channel-name a",
+    'a[href^="/@"][slot="title"]',
+  ];
+  for (const sel of channelSels) {
+    const el = qs(sel);
+    if (el) {
+      channel = txt(el);
+      if (channel) break;
+    }
+  }
+
+  // --- Subscriber count ---
+  const subSels = [
+    "#owner-sub-count",
+    "#subscriber-count",
+    "ytd-video-owner-renderer #owner-sub-count",
+    "#subscribe-count",
+  ];
+  for (const sel of subSels) {
+    const text = txt(qs(sel));
+    if (text) { subs = parseCount(text); break; }
+  }
+
+  // --- Publish date ---
+  const dateMeta = qs('meta[itemprop="datePublished"]');
+  if (dateMeta) {
+    published = dateMeta.getAttribute("content");
+  }
+  if (!published) {
+    const dateSels = [
+      '#info-strings yt-formatted-string',
+      '#info-container yt-formatted-string',
+    ];
+    for (const sel of dateSels) {
+      const el = qs(sel);
+      if (el) {
+        const text = txt(el);
+        if (text && !/view|View/i.test(text)) {
+          published = text;
+          break;
+        }
       }
     }
   }
 
-  // Comments count
-  let comments = null;
-  const commentsText = txt(
-    document.querySelector("#count yt-formatted-string, ytd-comments-header-renderer #count")
-  );
-  comments = parseCount(commentsText);
+  // --- Comments count ---
+  const commentSels = [
+    "#count yt-formatted-string",
+    "ytd-comments-header-renderer #count",
+    "#comments #count",
+  ];
+  for (const sel of commentSels) {
+    const text = txt(qs(sel));
+    if (text) { comments = parseCount(text); break; }
+  }
 
   return { views, likes, channel, subs, published, comments };
 }
@@ -216,13 +290,12 @@ function getThumbnailUrl() {
     'meta[name="twitter:image"]',
   ];
   for (const sel of selectors) {
-    const el = document.querySelector(sel);
+    const el = qs(sel);
     if (el) {
       const url = el.getAttribute("content") || el.getAttribute("href");
       if (url) return url;
     }
   }
-  // Construct from video ID
   const videoId = getVideoId();
   return videoId
     ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
@@ -233,11 +306,8 @@ function getThumbnailUrl() {
 // getVideoId — extract YouTube video ID from URL or page data
 // =============================================================================
 function getVideoId() {
-  // Try page data first
-  const el = document.querySelector('meta[itemprop="videoId"]');
+  const el = qs('meta[itemprop="videoId"]');
   if (el) return el.getAttribute("content");
-
-  // Fallback to URL
   const params = new URLSearchParams(location.search);
   return params.get("v");
 }
@@ -247,14 +317,12 @@ function getVideoId() {
 // =============================================================================
 function getComments() {
   const comments = [];
-  document
-    .querySelectorAll(
-      "ytd-comment-thread-renderer #content-text, ytd-comment-renderer #content-text"
-    )
-    .forEach((el) => {
-      const text = txt(el);
-      if (text) comments.push(text);
-    });
+  qsAll(
+    "ytd-comment-thread-renderer #content-text, ytd-comment-renderer #content-text"
+  ).forEach((el) => {
+    const text = txt(el);
+    if (text) comments.push(text);
+  });
   return comments.slice(0, 20);
 }
 
@@ -263,19 +331,26 @@ function getComments() {
 // =============================================================================
 function scrape() {
   const isWatch = location.pathname.startsWith("/watch");
-  return {
+  const title = getTitle();
+  const description = getDescription();
+  const tags = getTags();
+  const stats = getStats();
+  const data = {
     ok: true,
     isWatch,
     url: location.href,
     videoId: getVideoId(),
-    title: getTitle(),
-    description: getDescription(),
-    tags: getTags(),
-    stats: getStats(),
+    title,
+    description,
+    tags,
+    stats,
     thumbnailUrl: getThumbnailUrl(),
     comments: getComments(),
     scrapedAt: Date.now(),
   };
+  // Detect when scraping returns nothing useful
+  data._empty = !title && !description && !stats.views && !stats.channel;
+  return data;
 }
 
 // =============================================================================
