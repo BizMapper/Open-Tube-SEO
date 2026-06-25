@@ -318,18 +318,35 @@ $("btn-research-keyword")?.addEventListener("click", async () => {
 
   // Show long-tail suggestions
   const longtail = suggestLongTail(kw);
+  const longtailSlice = longtail.slice(0, 15);
   longtailEl.innerHTML =
-    `<strong>Long-tail variations</strong><br/>` +
-    longtail
-      .slice(0, 15)
+    `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <strong>Long-tail variations</strong>
+      <button class="btn small" id="btn-copy-longtail">Copy all</button>
+    </div>` +
+    longtailSlice
       .map(
         (s) =>
           `<span class="chip" onclick="navigator.clipboard.writeText('${s.replace(
             /'/g,
             "\\'"
-          )}')">${s}</span>`
+          )}').then(() => this.classList.add('copied'))">${s}</span>`
       )
-      .join("");
+      .join("") +
+    `<div class="muted small" style="margin-top:4px">Click individual chips to copy · <strong>${longtail.length}</strong> total variations</div>`;
+
+  // Bind the copy-all button after it's in the DOM
+  setTimeout(() => {
+    const copyBtn = document.getElementById("btn-copy-longtail");
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        const text = longtailSlice.join(", ");
+        navigator.clipboard.writeText(text);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => { copyBtn.textContent = "Copy all"; }, 1500);
+      };
+    }
+  }, 0);
 });
 
 // =============================================================================
