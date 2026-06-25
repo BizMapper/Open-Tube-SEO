@@ -82,7 +82,7 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; worker-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net https://unpkg.com;"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; worker-src 'self'"
   },
   "options_page": "options.html",
   "commands": {
