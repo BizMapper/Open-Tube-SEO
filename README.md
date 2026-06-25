@@ -268,3 +268,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 ---
 
 *OpenTube SEO is not affiliated with VidIQ, YouTube, or Google. It is an independent, open-source project.*
+Designed by Medo Hamdani.
