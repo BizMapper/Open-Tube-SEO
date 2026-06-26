@@ -275,6 +275,108 @@ function injectOptimizeButton() {
 }
 
 // =============================================================================
+// scrapeStudio — read title, description, tags from the Studio edit form
+// =============================================================================
+function scrapeStudio() {
+  const isEdit =
+    location.pathname.includes("/video/") ||
+    location.pathname.includes("/edit") ||
+    location.pathname.includes("/upload");
+
+  // Title field — YouTube Studio uses contenteditable divs or textareas
+  const titleSelectors = [
+    '#title-textarea #textarea',
+    'ytcp-video-title textarea',
+    '#title-textarea [contenteditable]',
+    'textarea#title-textarea',
+  ];
+  let title = "";
+  for (const sel of titleSelectors) {
+    const el = document.querySelector(sel);
+    if (el) {
+      title = el.value || el.textContent || "";
+      if (title.trim()) break;
+    }
+  }
+
+  // Description field
+  const descSelectors = [
+    '#description-textarea #textarea',
+    'ytcp-video-description textarea',
+    '#description-textarea [contenteditable]',
+    'textarea#description-textarea',
+  ];
+  let description = "";
+  for (const sel of descSelectors) {
+    const el = document.querySelector(sel);
+    if (el) {
+      description = el.value || el.textContent || "";
+      if (description.trim()) break;
+    }
+  }
+
+  // Tags field
+  const tagsSelectors = [
+    '#tags-textarea textarea',
+    'ytcp-video-tags textarea',
+    'input#tags-input',
+  ];
+  let tagsText = "";
+  for (const sel of tagsSelectors) {
+    const el = document.querySelector(sel);
+    if (el) {
+      tagsText = el.value || el.textContent || "";
+      if (tagsText.trim()) break;
+    }
+  }
+  const tags = tagsText
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  // Extract video ID from URL
+  const videoId = location.pathname.match(/\/video\/([^/]+)/)?.[1] || null;
+
+  // Channel name from Studio header
+  const channelEl = document.querySelector(
+    '#channel-name, ytcp-channel-name, .channel-name'
+  );
+  const channel = channelEl?.textContent?.trim() || "";
+
+  return {
+    ok: true,
+    isWatch: false,
+    isStudio: true,
+    isEdit,
+    url: location.href,
+    videoId,
+    title,
+    description,
+    tags,
+    stats: { channel, views: null, likes: null, subs: null, published: null },
+    thumbnailUrl: videoId
+      ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+      : null,
+    comments: [],
+    scrapedAt: Date.now(),
+  };
+}
+
+// =============================================================================
+// Message listener
+// =============================================================================
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === "SCRAPE_PAGE" || msg?.type === "OPENTUBE_GET_FULL_DATA") {
+    try {
+      sendResponse(scrapeStudio());
+    } catch (e) {
+      sendResponse({ ok: false, error: String(e) });
+    }
+  }
+  return true;
+});
+
+// =============================================================================
 // Init — run when studio page loads
 // =============================================================================
 (function init() {
