@@ -283,7 +283,48 @@ function scrapeStudio() {
     location.pathname.includes("/edit") ||
     location.pathname.includes("/upload");
 
-  // Title field — YouTube Studio uses contenteditable divs or textareas
+  // Helper: scan all textareas/inputs on the page for content
+  function findFieldByKeyword(keywords) {
+    // Try specific selectors first (may fail if elements are in shadow DOM)
+    // Then fall back to scanning all inputs/textareas on the page
+    const kws = keywords.toLowerCase().split(",");
+    const allInputs = document.querySelectorAll("textarea, input[type=text], [contenteditable], iron-autogrow-textarea");
+    let best = null;
+    let bestScore = 0;
+    for (const el of allInputs) {
+      const val = el.value || el.textContent || "";
+      if (!val.trim()) continue;
+      // Check the element's own id/class/placeholder/label for keyword match
+      const ctx = ((el.id || "") + " " + (el.className || "") + " " + (el.placeholder || "") + " " + ((el.closest("[id]") || {}).id || "")).toLowerCase();
+      const score = kws.filter(k => ctx.includes(k.trim())).length;
+      // Also check aria-label
+      const ariaLabel = (el.getAttribute("aria-label") || "").toLowerCase();
+      const ariaScore = kws.filter(k => ariaLabel.includes(k.trim())).length;
+      const totalScore = score + ariaScore * 2;
+      if (totalScore > bestScore || (totalScore === bestScore && val.length > (best?.value?.length || 0))) {
+        bestScore = totalScore;
+        best = { el, value: val };
+      }
+    }
+    return best ? best.value : "";
+  }
+
+  // Helper: scan ALL textareas by content length (description is usually the biggest textarea)
+  function findLargestTextarea() {
+    const all = document.querySelectorAll("textarea, [contenteditable], iron-autogrow-textarea");
+    let largest = null;
+    let largestLen = 0;
+    for (const el of all) {
+      const val = el.value || el.textContent || "";
+      if (val.trim().length > largestLen) {
+        largestLen = val.trim().length;
+        largest = val.trim();
+      }
+    }
+    return largest || "";
+  }
+
+  // Title field
   const titleSelectors = [
     '#title-textarea #textarea',
     'ytcp-video-title textarea',
@@ -298,6 +339,10 @@ function scrapeStudio() {
       if (title.trim()) break;
     }
   }
+  if (!title) {
+    // Fallback: find by keyword
+    title = findFieldByKeyword("title");
+  }
 
   // Description field
   const descSelectors = [
@@ -305,6 +350,7 @@ function scrapeStudio() {
     'ytcp-video-description textarea',
     '#description-textarea [contenteditable]',
     'textarea#description-textarea',
+    'ytcp-video-description paper-textarea',
   ];
   let description = "";
   for (const sel of descSelectors) {
@@ -314,12 +360,17 @@ function scrapeStudio() {
       if (description.trim()) break;
     }
   }
+  if (!description) {
+    // Fallback: find by keyword or pick largest textarea
+    description = findFieldByKeyword("desc") || findLargestTextarea();
+  }
 
   // Tags field
   const tagsSelectors = [
     '#tags-textarea textarea',
     'ytcp-video-tags textarea',
     'input#tags-input',
+    'ytcp-video-tags iron-input',
   ];
   let tagsText = "";
   for (const sel of tagsSelectors) {
@@ -329,8 +380,11 @@ function scrapeStudio() {
       if (tagsText.trim()) break;
     }
   }
+  if (!tagsText) {
+    tagsText = findFieldByKeyword("tag");
+  }
   const tags = tagsText
-    .split(",")
+    .split(/[,]+/)
     .map((t) => t.trim())
     .filter(Boolean);
 

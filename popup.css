@@ -198,6 +198,7 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .checklist .pass .icon { color: var(--good); }
 .checklist .fail .icon { color: var(--warn); }
 .checklist .hint { color: var(--muted); font-size: 11px; }
+.checklist .action { color: var(--warn); font-size: 11px; font-style: italic; display: block; padding-left: 4px; }
 
 /* ======== CHIPS (keywords) ======== */
 .chips {

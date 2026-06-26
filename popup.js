@@ -208,7 +208,9 @@ function renderScore(data) {
     const li = document.createElement("li");
     li.className = c.pass ? "pass" : "fail";
     li.innerHTML = `<span class="icon">${c.pass ? "✓" : "!"}</span>
-      <span>${c.label}${c.pass ? "" : ` — <span class="hint">${c.hint}</span>`}</span>`;
+      <span>${c.label}${c.pass ? "" : ` — <span class="hint">${c.hint}</span>`}
+      ${c.pass || !c.action ? "" : `<br><span class="action">→ ${c.action}</span>`}
+      </span>`;
     list.appendChild(li);
   }
 }
