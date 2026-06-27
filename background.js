@@ -47,7 +47,7 @@ const DEFAULT_SETTINGS = {
   autoBackup: false,
   backupIntervalDays: 7,
   // Theme
-  theme: "dark",
+  lightTheme: false,
 };
 
 // =============================================================================

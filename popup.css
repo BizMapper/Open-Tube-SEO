@@ -1,11 +1,13 @@
 /* =============================================================================
    popup.css — OpenTube SEO Popup Styles
    =============================================================================
-   Dark theme, compact layout for the 380px-wide popup.
+   Supports dark (default) and light themes via .theme-light on <body>.
    Uses CSS custom properties for easy theming.
    ============================================================================= */
 
-:root {
+/* ======== DARK THEME (default) ======== */
+:root,
+.theme-dark {
   --bg: #0f1115;
   --card: #171a21;
   --border: #262b36;
@@ -17,6 +19,27 @@
   --warn: #f59e0b;
   --bad: #ef4444;
   --chip-bg: #20242d;
+  --input-bg: #20242d;
+  --hover-fg: #ffffff;
+  --link: #60a5fa;
+}
+
+/* ======== LIGHT THEME ======== */
+.theme-light {
+  --bg: #f8f9fa;
+  --card: #ffffff;
+  --border: #dee2e6;
+  --fg: #212529;
+  --muted: #6c757d;
+  --primary: #dc3545;
+  --primary-fg: #ffffff;
+  --good: #198754;
+  --warn: #e6a700;
+  --bad: #dc3545;
+  --chip-bg: #e9ecef;
+  --input-bg: #ffffff;
+  --hover-fg: #000000;
+  --link: #1a73e8;
 }
 
 * {
@@ -44,6 +67,8 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .hidden { display: none !important; }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
+.good { color: var(--good); }
+a { color: var(--link); }
 
 /* ======== HEADER ======== */
 .header {
@@ -120,7 +145,7 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   transition: color 0.15s, border-color 0.15s;
   font-family: inherit;
 }
-.tab:hover { color: var(--fg); }
+.tab:hover { color: var(--hover-fg); }
 .tab.active {
   color: var(--primary);
   border-bottom-color: var(--primary);
@@ -221,7 +246,7 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 /* ======== INPUTS (standalone) ======== */
 .input {
   width: 100%;
-  background: var(--chip-bg);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 7px 10px;
@@ -245,7 +270,7 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 }
 .input-row input {
   flex: 1;
-  background: var(--chip-bg);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 7px 10px;
@@ -280,7 +305,7 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   align-items: center;
 }
 .select {
-  background: var(--chip-bg);
+  background: var(--input-bg);
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 8px;

@@ -91,6 +91,13 @@ function populateModelDropdowns() {
 populateModelDropdowns();
 
 // =============================================================================
+// Theme — light / dark toggle
+// =============================================================================
+function applyTheme(useLight) {
+  document.body.classList.toggle("theme-light", useLight);
+}
+
+// =============================================================================
 // Settings — load and bind
 // =============================================================================
 async function loadSettings() {
@@ -101,6 +108,8 @@ async function loadSettings() {
       $("setting-badge").checked = settings.showScoreBadge !== false;
       $("setting-sidebar").checked = settings.enableSidebar !== false;
       $("setting-ai").checked = settings.useAI !== false;
+      $("setting-light-theme").checked = settings.lightTheme === true;
+      applyTheme(settings.lightTheme === true);
       if (settings.model && $("setting-model")) {
         $("setting-model").value = settings.model;
       }
@@ -116,10 +125,12 @@ async function saveSettings() {
     showScoreBadge: $("setting-badge").checked,
     enableSidebar: $("setting-sidebar").checked,
     useAI: $("setting-ai").checked,
+    lightTheme: $("setting-light-theme").checked,
     model: $("setting-model")?.value || DEFAULT_MODEL,
   };
   try {
     await chrome.runtime.sendMessage({ type: "SAVE_SETTINGS", settings });
+    applyTheme(settings.lightTheme);
   } catch (e) {
     console.log("[settings] Could not save:", e.message);
   }
