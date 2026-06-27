@@ -76,7 +76,7 @@ if (isWebGPUAvailable()) {
 // Model dropdown (main + settings)
 // =============================================================================
 function populateModelDropdowns() {
-  [($("model-select"), $("setting-model"))].forEach((sel) => {
+  [$("model-select"), $("setting-model")].forEach((sel) => {
     if (!sel) return;
     sel.innerHTML = "";
     for (const [id, label] of Object.entries(MODELS)) {
