@@ -56,7 +56,8 @@ $("tabs").addEventListener("click", (e) => {
   // Update tab content
   const tabName = tabBtn.dataset.tab;
   document.querySelectorAll(".tab-content").forEach((tc) => tc.classList.remove("active"));
-  $(`tab-${tabName}`).classList.add("active");
+  const target = $(`tab-${tabName}`);
+  if (target) target.classList.add("active");
 });
 
 // =============================================================================
@@ -464,9 +465,35 @@ function renderAI({ titles, tags, description, hashtags }) {
 // Competitor tab — tag strategy, recommendations, and content gaps
 // =============================================================================
 async function renderCompetitorTab() {
-  const title = pageData?.title || "";
-  const description = pageData?.description || "";
-  const tags = pageData?.tags || [];
+  // Load any manually entered data from storage
+  const stored = await chrome.storage.local.get("manualVideoData");
+  const manual = stored.manualVideoData || {};
+
+  // Merge: manual data overrides scraped pageData
+  const title = manual.title || pageData?.title || "";
+  const description = manual.description || pageData?.description || "";
+  const tags = manual.tags || pageData?.tags || [];
+
+  // Show/hide manual input card and populate fields
+  const manualInputBody = $("manual-input-body");
+  const toggleBtn = $("toggle-manual-input");
+  if (manual.title || manual.description || manual.tags?.length) {
+    // Pre-populate fields with stored manual data
+    $("manual-title").value = manual.title || "";
+    $("manual-description").value = manual.description || "";
+    $("manual-tags").value = (manual.tags || []).join(", ");
+    manualInputBody.style.display = "block";
+    toggleBtn.textContent = "Hide";
+  } else if (!pageData?.title && !pageData?.description && !pageData?.tags?.length) {
+    // No scraped data either — show the form automatically
+    manualInputBody.style.display = "block";
+    toggleBtn.textContent = "Hide";
+  } else {
+    manualInputBody.style.display = "none";
+    toggleBtn.textContent = "Show";
+  }
+
+  const hasAnyData = title || description || tags.length > 0;
 
   // --- 1. Tag strategy breakdown ---
   const analysis = analyzeTagStrategy(tags);
@@ -484,32 +511,27 @@ async function renderCompetitorTab() {
         ${analysis.specific.length < 3 ? " Add more 2-3 word specific tags for relevance." : ""}
         ${analysis.longTail.length < 3 ? " Add long-tail phrases (4+ words) for low-competition ranking." : ""}
       </div>`
-    : `<span class="muted">No tags found — add tags in YouTube Studio or use the AI tab to generate them.</span>`;
+    : `<span class="muted">No tags found — paste your video data above or use the AI tab to generate tags.</span>`;
 
   // --- 2. Recommended tags to add ---
   const recEl = $("recommended-tags");
   const titleTokens = tokenize(title);
   if (titleTokens.length === 0 && !description) {
-    recEl.innerHTML = `<span class="muted">Add a title to get tag recommendations.</span>`;
+    recEl.innerHTML = `<span class="muted">Paste your title and description above to get tag recommendations.</span>`;
   } else {
-    // Extract keywords we already have
     const existingKeywords = new Set(tags.map(t => t.toLowerCase()));
     const existingWords = new Set();
     tags.forEach(t => tokenize(t).forEach(w => existingWords.add(w)));
 
-    // Generate recommended tag categories based on what's MISSING
     const recs = [];
 
-    // Suggest broad category tags
     const broadRecs = ["tutorial", "review", "howto", "guide", "tips", "vlog", "educational", "entertainment"]
       .filter(b => !existingWords.has(b));
     if (broadRecs.length > 0) recs.push({ cat: "Broad discovery", tags: broadRecs.slice(0, 4) });
 
-    // Suggest title-word tags
     const titleWordRecs = titleTokens.filter(w => !existingWords.has(w));
     if (titleWordRecs.length > 0) recs.push({ cat: "From your title", tags: titleWordRecs.slice(0, 5) });
 
-    // Suggest phrase tags (2-3 word combinations from title)
     const phraseRecs = [];
     for (let i = 0; i < titleTokens.length - 1; i++) {
       const phrase = titleTokens[i] + " " + titleTokens[i + 1];
@@ -517,7 +539,6 @@ async function renderCompetitorTab() {
     }
     if (phraseRecs.length > 0) recs.push({ cat: "Title phrases (long-tail)", tags: phraseRecs.slice(0, 4) });
 
-    // Suggest description keyword tags
     const descTokens = tokenize(description);
     const descRecs = descTokens.filter(w => !existingWords.has(w) && !titleTokens.includes(w));
     if (descRecs.length > 0) recs.push({ cat: "From your description", tags: descRecs.slice(0, 5) });
@@ -538,10 +559,9 @@ async function renderCompetitorTab() {
 
   // --- 3. Content gaps ---
   const gapEl = $("content-gaps");
-  if (!title && !description) {
-    gapEl.innerHTML = `<span class="muted">No content data available. Open a video page first.</span>`;
+  if (!hasAnyData) {
+    gapEl.innerHTML = `<span class="muted">Paste your video data above to see content gaps.</span>`;
   } else {
-    // Find keywords in title/description that are NOT in tags
     const allTokens = [...new Set([...tokenize(title), ...tokenize(description)])];
     const existingSet = new Set();
     tags.forEach(t => tokenize(t).forEach(w => existingSet.add(w)));
@@ -622,6 +642,30 @@ $("import-file")?.addEventListener("change", async (e) => {
 
   // Reset the file input
   e.target.value = "";
+});
+
+// =============================================================================
+// Manual input — toggle and analyze
+// =============================================================================
+$("toggle-manual-input")?.addEventListener("click", () => {
+  const body = $("manual-input-body");
+  const isHidden = body.style.display === "none";
+  body.style.display = isHidden ? "block" : "none";
+  $("toggle-manual-input").textContent = isHidden ? "Hide" : "Show";
+});
+
+$("btn-analyze-manual")?.addEventListener("click", async () => {
+  const title = $("manual-title").value.trim();
+  const description = $("manual-description").value.trim();
+  const tagsRaw = $("manual-tags").value.trim();
+  const tags = tagsRaw
+    ? tagsRaw.split(",").map(t => t.trim()).filter(Boolean)
+    : [];
+
+  await chrome.storage.local.set({ manualVideoData: { title, description, tags } });
+
+  // Re-render the competitor tab with manual data merged in
+  await renderCompetitorTab();
 });
 
 // =============================================================================

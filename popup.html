@@ -28,14 +28,56 @@
     </div>
   </section>
 
-  <!-- ======== MAIN CONTENT ======== -->
+  <!-- ======== MANUAL INPUT + ANALYSIS (always visible) ======== -->
+  <section id="manual-section" class="panel">
+    <div class="card" id="manual-input-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>Paste your video data</h2>
+        <button id="toggle-manual-input" class="btn small" style="font-size:11px">Show</button>
+      </div>
+      <div id="manual-input-body" style="display:none">
+        <p class="muted small">Enter your video details manually (no YouTube page needed).</p>
+        <label class="input-label">Title</label>
+        <input type="text" id="manual-title" placeholder="Your video title" class="input" />
+        <label class="input-label" style="margin-top:6px">Description</label>
+        <textarea id="manual-description" placeholder="Your video description" class="input" rows="3"></textarea>
+        <label class="input-label" style="margin-top:6px">Tags (comma-separated)</label>
+        <input type="text" id="manual-tags" placeholder="tag1, tag2, tag3" class="input" />
+        <button id="btn-analyze-manual" class="btn primary small" style="margin-top:8px;width:100%">Analyze</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tag strategy breakdown</h2>
+      <div id="competitor-analysis" class="muted small" style="margin-top:4px">
+        No tags found for this video.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Recommended tags to add</h2>
+      <p class="muted small">Based on your title and description, here are missing tag categories and suggested tags.</p>
+      <div id="recommended-tags" class="muted small" style="margin-top:8px">
+        Add a title or description to get tag recommendations.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Content gaps</h2>
+      <p class="muted small">Keywords in your title that aren't reflected in your description or tags — these are missed ranking opportunities.</p>
+      <div id="content-gaps" class="muted small" style="margin-top:8px">
+        No content data available. Open a video page first.
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== MAIN APP ======== -->
   <section id="app" class="panel hidden">
 
     <!-- ======== TABS ======== -->
     <nav class="tabs" id="tabs">
       <button class="tab active" data-tab="seo">SEO</button>
       <button class="tab" data-tab="keywords">Keywords</button>
-      <button class="tab" data-tab="competitors">Competitors</button>
       <button class="tab" data-tab="ai">AI</button>
       <button class="tab" data-tab="settings">⚙</button>
     </nav>
@@ -90,32 +132,6 @@
       <div class="card">
         <h2>Long-tail suggestions</h2>
         <div id="longtail-results" class="muted small">Research a keyword to see long-tail variations.</div>
-      </div>
-    </div>
-
-    <!-- ======== TAB: Competitors ======== -->
-    <div id="tab-competitors" class="tab-content">
-      <div class="card">
-        <h2>Tag strategy breakdown</h2>
-        <div id="competitor-analysis" class="muted small" style="margin-top:4px">
-          No tags found for this video.
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Recommended tags to add</h2>
-        <p class="muted small">Based on your title and description, here are missing tag categories and suggested tags.</p>
-        <div id="recommended-tags" class="muted small" style="margin-top:8px">
-          Add a title or description to get tag recommendations.
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Content gaps</h2>
-        <p class="muted small">Keywords in your title that aren't reflected in your description or tags — these are missed ranking opportunities.</p>
-        <div id="content-gaps" class="muted small" style="margin-top:8px">
-          No content data available. Open a video page first.
-        </div>
       </div>
     </div>
 

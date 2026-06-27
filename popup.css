@@ -218,6 +218,26 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .chip:hover { border-color: var(--primary); }
 .chip.copied { border-color: var(--good) !important; }
 
+/* ======== INPUTS (standalone) ======== */
+.input {
+  width: 100%;
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--fg);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+}
+.input:focus { border-color: var(--primary); }
+.input-label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
 /* ======== INPUT ROW ======== */
 .input-row {
   display: flex;
