@@ -45,6 +45,26 @@ function getFeedVideos() {
 }
 
 // =============================================================================
+// scrapeFeed — collect feed page data for popup
+// =============================================================================
+function scrapeFeed() {
+  const videos = getFeedVideos();
+  return {
+    ok: true,
+    isWatch: false,
+    isFeed: true,
+    url: location.href,
+    title: `YouTube Feed — ${location.pathname.replace("/feed/", "") || "home"}`,
+    description: `${videos.length} videos in feed`,
+    tags: [],
+    stats: { channel: "", views: null, likes: null, subs: null, published: null },
+    feedVideos: videos,
+    feedType: location.pathname,
+    scrapedAt: Date.now(),
+  };
+}
+
+// =============================================================================
 // Message handler
 // =============================================================================
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -56,6 +76,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         feedType: location.pathname,
         scrapedAt: Date.now(),
       });
+    } catch (e) {
+      sendResponse({ ok: false, error: String(e) });
+    }
+  }
+  if (msg?.type === "SCRAPE_PAGE" || msg?.type === "OPENTUBE_GET_FULL_DATA") {
+    try {
+      sendResponse(scrapeFeed());
     } catch (e) {
       sendResponse({ ok: false, error: String(e) });
     }

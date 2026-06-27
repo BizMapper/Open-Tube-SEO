@@ -351,17 +351,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 async function getPageData(tabId) {
   if (!tabId) throw new Error("No tab ID provided");
 
+  const injectForUrl = async () => {
+    const tab = await chrome.tabs.get(tabId);
+    const url = tab?.url || "";
+    let file = "content/watch.js";
+    if (url.includes("studio.youtube.com")) file = "content/studio.js";
+    else if (url.includes("/results")) file = "content/search.js";
+    else if (url.includes("/feed/")) file = "content/feed.js";
+    else if (url.includes("/channel") || url.includes("/c/") || url.includes("/@"))
+      file = "content/channel.js";
+    return chrome.scripting.executeScript({ target: { tabId }, files: [file] });
+  };
+
   return new Promise((resolve, reject) => {
     chrome.tabs.sendMessage(
       tabId,
       { type: "OPENTUBE_GET_FULL_DATA" },
       (response) => {
         if (chrome.runtime.lastError) {
-          // Content script may not be injected; try injecting it
-          chrome.scripting
-            .executeScript({ target: { tabId }, files: ["content/watch.js"] })
+          injectForUrl()
             .then(() => {
-              // Retry after injection
               setTimeout(() => {
                 chrome.tabs.sendMessage(
                   tabId,

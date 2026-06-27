@@ -157,6 +157,7 @@ async function scrapeCurrentPage(retries = 2) {
           let file = "content/watch.js";
           if (tab.url.includes("studio.youtube.com")) file = "content/studio.js";
           else if (tab.url.includes("/results")) file = "content/search.js";
+          else if (tab.url.includes("/feed/")) file = "content/feed.js";
           else if (
             tab.url.includes("/channel") ||
             tab.url.includes("/c/") ||

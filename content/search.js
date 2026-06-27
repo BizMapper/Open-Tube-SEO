@@ -139,12 +139,40 @@ function getSERPAnalysis() {
 }
 
 // =============================================================================
+// scrapeSearch — collect search page data for popup
+// =============================================================================
+function scrapeSearch() {
+  const analysis = getSERPAnalysis();
+  return {
+    ok: true,
+    isWatch: false,
+    isSearch: true,
+    url: location.href,
+    title: `Search: ${analysis.query || "(no query)"}`,
+    description: `Top ${analysis.resultCount} results for "${analysis.query}"`,
+    tags: analysis.query ? analysis.query.toLowerCase().split(/\s+/) : [],
+    stats: { channel: "", views: null, likes: null, subs: null, published: null },
+    results: analysis.results,
+    patterns: analysis.patterns,
+    keywordDensity: analysis.keywordDensity,
+    scrapedAt: Date.now(),
+  };
+}
+
+// =============================================================================
 // Message handler
 // =============================================================================
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "OPENTUBE_SERP_ANALYSIS") {
     try {
       sendResponse(getSERPAnalysis());
+    } catch (e) {
+      sendResponse({ ok: false, error: String(e) });
+    }
+  }
+  if (msg?.type === "SCRAPE_PAGE" || msg?.type === "OPENTUBE_GET_FULL_DATA") {
+    try {
+      sendResponse(scrapeSearch());
     } catch (e) {
       sendResponse({ ok: false, error: String(e) });
     }

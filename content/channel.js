@@ -135,11 +135,29 @@ function parseCount(str) {
 // getChannelData — aggregate all channel data
 // =============================================================================
 function getChannelData() {
+  const info = getChannelInfo();
+  const videos = getRecentVideos();
+  const tags = getChannelTags();
   return {
     ok: true,
-    channel: getChannelInfo(),
-    recentVideos: getRecentVideos(),
-    tags: getChannelTags(),
+    isChannel: true,
+    isWatch: false,
+    url: location.href,
+    channel: info,
+    recentVideos: videos,
+    tags: tags,
+    title: info.name || `YouTube Channel${info.handle ? " @" + info.handle : ""}`,
+    description: info.description || "",
+    stats: {
+      channel: info.name || "",
+      views: null,
+      likes: null,
+      subs: info.subscribers || null,
+      published: null,
+    },
+    videoId: null,
+    thumbnailUrl: null,
+    comments: [],
     scrapedAt: Date.now(),
   };
 }
