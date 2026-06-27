@@ -13,6 +13,7 @@ import {
   extractKeywords,
   analyzeReadability,
   estimateKeywordDifficulty,
+  tokenize,
 } from "./lib/seo.js";
 import {
   classifyIntent,
@@ -459,27 +460,108 @@ function renderAI({ titles, tags, description, hashtags }) {
 }
 
 // =============================================================================
-// Competitor tab — compare two sets of data
+// Competitor tab — tag strategy, recommendations, and content gaps
 // =============================================================================
 async function renderCompetitorTab() {
-  // For now, just show a comparison of current video against stored channel data
-  if (!pageData?.tags?.length) {
-    return;
+  const title = pageData?.title || "";
+  const description = pageData?.description || "";
+  const tags = pageData?.tags || [];
+
+  // --- 1. Tag strategy breakdown ---
+  const analysis = analyzeTagStrategy(tags);
+  const analysisEl = $("competitor-analysis");
+  const hasTags = tags.length > 0;
+  analysisEl.innerHTML = hasTags
+    ? `<div style="margin-bottom:6px">
+        <strong>${tags.length} tags</strong> — Broad: <strong>${analysis.broad.length}</strong> · Specific: <strong>${analysis.specific.length}</strong> · Long-tail: <strong>${analysis.longTail.length}</strong>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${tags.map(t => `<span class="chip" onclick="navigator.clipboard.writeText('${t.replace(/'/g,"\\'")}');this.classList.add('copied')">${t}</span>`).join("")}
+      </div>
+      <div style="margin-top:6px;color:#9aa3b2;font-size:12px">
+        ${analysis.broad.length === 0 ? "Tip: Add some single-word broad tags for discovery." : ""}
+        ${analysis.specific.length < 3 ? " Add more 2-3 word specific tags for relevance." : ""}
+        ${analysis.longTail.length < 3 ? " Add long-tail phrases (4+ words) for low-competition ranking." : ""}
+      </div>`
+    : `<span class="muted">No tags found — add tags in YouTube Studio or use the AI tab to generate them.</span>`;
+
+  // --- 2. Recommended tags to add ---
+  const recEl = $("recommended-tags");
+  const titleTokens = tokenize(title);
+  if (titleTokens.length === 0 && !description) {
+    recEl.innerHTML = `<span class="muted">Add a title to get tag recommendations.</span>`;
+  } else {
+    // Extract keywords we already have
+    const existingKeywords = new Set(tags.map(t => t.toLowerCase()));
+    const existingWords = new Set();
+    tags.forEach(t => tokenize(t).forEach(w => existingWords.add(w)));
+
+    // Generate recommended tag categories based on what's MISSING
+    const recs = [];
+
+    // Suggest broad category tags
+    const broadRecs = ["tutorial", "review", "howto", "guide", "tips", "vlog", "educational", "entertainment"]
+      .filter(b => !existingWords.has(b));
+    if (broadRecs.length > 0) recs.push({ cat: "Broad discovery", tags: broadRecs.slice(0, 4) });
+
+    // Suggest title-word tags
+    const titleWordRecs = titleTokens.filter(w => !existingWords.has(w));
+    if (titleWordRecs.length > 0) recs.push({ cat: "From your title", tags: titleWordRecs.slice(0, 5) });
+
+    // Suggest phrase tags (2-3 word combinations from title)
+    const phraseRecs = [];
+    for (let i = 0; i < titleTokens.length - 1; i++) {
+      const phrase = titleTokens[i] + " " + titleTokens[i + 1];
+      if (!existingKeywords.has(phrase)) phraseRecs.push(phrase);
+    }
+    if (phraseRecs.length > 0) recs.push({ cat: "Title phrases (long-tail)", tags: phraseRecs.slice(0, 4) });
+
+    // Suggest description keyword tags
+    const descTokens = tokenize(description);
+    const descRecs = descTokens.filter(w => !existingWords.has(w) && !titleTokens.includes(w));
+    if (descRecs.length > 0) recs.push({ cat: "From your description", tags: descRecs.slice(0, 5) });
+
+    if (recs.length === 0) {
+      recEl.innerHTML = `<span class="muted good">Your tags already cover all detected keywords. Good coverage!</span>`;
+    } else {
+      recEl.innerHTML = recs.map(r =>
+        `<div style="margin-bottom:8px">
+          <strong style="font-size:11px;color:#9aa3b2;text-transform:uppercase">${r.cat}</strong>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+            ${r.tags.map(t => `<span class="chip" onclick="navigator.clipboard.writeText('${t.replace(/'/g,"\\'")}');this.classList.add('copied')">${t}</span>`).join("")}
+          </div>
+        </div>`
+      ).join("");
+    }
   }
 
-  const analysis = analyzeTagStrategy(pageData.tags);
-  const el = $("competitor-analysis");
-  el.innerHTML = `
-    <div style="margin-bottom:8px">
-      <strong>Tag strategy breakdown:</strong>
-    </div>
-    <div>Broad tags: <strong>${analysis.broad.length}</strong></div>
-    <div>Specific tags: <strong>${analysis.specific.length}</strong></div>
-    <div>Long-tail tags: <strong>${analysis.longTail.length}</strong></div>
-    <div style="margin-top:8px;color:#9aa3b2;font-size:12px">
-      Balanced tag strategies include a mix of broad discovery terms and specific long-tail phrases.
-    </div>
-  `;
+  // --- 3. Content gaps ---
+  const gapEl = $("content-gaps");
+  if (!title && !description) {
+    gapEl.innerHTML = `<span class="muted">No content data available. Open a video page first.</span>`;
+  } else {
+    // Find keywords in title/description that are NOT in tags
+    const allTokens = [...new Set([...tokenize(title), ...tokenize(description)])];
+    const existingSet = new Set();
+    tags.forEach(t => tokenize(t).forEach(w => existingSet.add(w)));
+    const gaps = allTokens.filter(w => !existingSet.has(w) && w.length > 3);
+
+    if (gaps.length === 0) {
+      gapEl.innerHTML = `<span class="good">✓ All your content keywords are covered by existing tags.</span>`;
+    } else {
+      gapEl.innerHTML =
+        `<div style="margin-bottom:6px">These keywords appear in your content but NOT in your tags — add them to rank for these terms:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${gaps.slice(0, 12).map(w =>
+            `<span class="chip" onclick="navigator.clipboard.writeText('${w.replace(/'/g,"\\'")}');this.classList.add('copied')">${w}</span>`
+          ).join("")}
+        </div>
+        <div style="margin-top:6px;color:#9aa3b2;font-size:12px">
+          ${gaps.length > 12 ? `+${gaps.length - 12} more gaps` : ""}
+          Click any chip to copy, then paste into Studio's tags field.
+        </div>`;
+    }
+  }
 }
 
 // =============================================================================
