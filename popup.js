@@ -476,33 +476,12 @@ function renderAI({ titles, tags, description, hashtags }) {
 // Competitor tab — tag strategy, recommendations, and content gaps
 // =============================================================================
 async function renderCompetitorTab() {
-  // Load any manually entered data from storage
   const stored = await chrome.storage.local.get("manualVideoData");
   const manual = stored.manualVideoData || {};
 
-  // Merge: manual data overrides scraped pageData
   const title = manual.title || pageData?.title || "";
   const description = manual.description || pageData?.description || "";
   const tags = manual.tags || pageData?.tags || [];
-
-  // Show/hide manual input card and populate fields
-  const manualInputBody = $("manual-input-body");
-  const toggleBtn = $("toggle-manual-input");
-  if (manual.title || manual.description || manual.tags?.length) {
-    // Pre-populate fields with stored manual data
-    $("manual-title").value = manual.title || "";
-    $("manual-description").value = manual.description || "";
-    $("manual-tags").value = (manual.tags || []).join(", ");
-    manualInputBody.style.display = "block";
-    toggleBtn.textContent = "Hide";
-  } else if (!pageData?.title && !pageData?.description && !pageData?.tags?.length) {
-    // No scraped data either — show the form automatically
-    manualInputBody.style.display = "block";
-    toggleBtn.textContent = "Hide";
-  } else {
-    manualInputBody.style.display = "none";
-    toggleBtn.textContent = "Show";
-  }
 
   const hasAnyData = title || description || tags.length > 0;
 
@@ -522,13 +501,13 @@ async function renderCompetitorTab() {
         ${analysis.specific.length < 3 ? " Add more 2-3 word specific tags for relevance." : ""}
         ${analysis.longTail.length < 3 ? " Add long-tail phrases (4+ words) for low-competition ranking." : ""}
       </div>`
-    : `<span class="muted">No tags found — paste your video data above or use the AI tab to generate tags.</span>`;
+    : `<span class="muted">No tags entered — add tags in your video data.</span>`;
 
   // --- 2. Recommended tags to add ---
   const recEl = $("recommended-tags");
   const titleTokens = tokenize(title);
   if (titleTokens.length === 0 && !description) {
-    recEl.innerHTML = `<span class="muted">Paste your title and description above to get tag recommendations.</span>`;
+    recEl.innerHTML = `<span class="muted">Enter a title and description to get tag recommendations.</span>`;
   } else {
     const existingKeywords = new Set(tags.map(t => t.toLowerCase()));
     const existingWords = new Set();
@@ -571,7 +550,7 @@ async function renderCompetitorTab() {
   // --- 3. Content gaps ---
   const gapEl = $("content-gaps");
   if (!hasAnyData) {
-    gapEl.innerHTML = `<span class="muted">Paste your video data above to see content gaps.</span>`;
+    gapEl.innerHTML = `<span class="muted">Enter video data to see content gaps.</span>`;
   } else {
     const allTokens = [...new Set([...tokenize(title), ...tokenize(description)])];
     const existingSet = new Set();
@@ -656,15 +635,8 @@ $("import-file")?.addEventListener("change", async (e) => {
 });
 
 // =============================================================================
-// Manual input — toggle and analyze
+// Manual input — analyze and show results
 // =============================================================================
-$("toggle-manual-input")?.addEventListener("click", () => {
-  const body = $("manual-input-body");
-  const isHidden = body.style.display === "none";
-  body.style.display = isHidden ? "block" : "none";
-  $("toggle-manual-input").textContent = isHidden ? "Hide" : "Show";
-});
-
 $("btn-analyze-manual")?.addEventListener("click", async () => {
   const title = $("manual-title").value.trim();
   const description = $("manual-description").value.trim();
@@ -675,8 +647,14 @@ $("btn-analyze-manual")?.addEventListener("click", async () => {
 
   await chrome.storage.local.set({ manualVideoData: { title, description, tags } });
 
-  // Re-render the competitor tab with manual data merged in
+  $("manual-section").classList.add("hidden");
+  $("analysis-section").classList.remove("hidden");
   await renderCompetitorTab();
+});
+
+$("btn-show-manual-input")?.addEventListener("click", () => {
+  $("analysis-section").classList.add("hidden");
+  $("manual-section").classList.remove("hidden");
 });
 
 // =============================================================================
@@ -689,6 +667,7 @@ async function initPopup(forceRefresh = false) {
   if (!pageData || pageData.notYouTube) {
     $("not-youtube").classList.remove("hidden");
     $("app").classList.add("hidden");
+    await showManualIfNoScrape();
     return;
   }
 
@@ -699,22 +678,26 @@ async function initPopup(forceRefresh = false) {
     $("not-youtube").querySelector(".empty-state p + p").textContent =
       pageData.error || "Unknown error. Try refreshing the YouTube page.";
     $("app").classList.add("hidden");
+    await showManualIfNoScrape();
     return;
   }
 
   if (pageData._empty) {
-    // Scraping returned but found no data — YouTube likely changed their DOM
     $("not-youtube").classList.remove("hidden");
     $("not-youtube").querySelector(".empty-state p").textContent =
       "Could not read YouTube video data";
     $("not-youtube").querySelector(".empty-state p + p").textContent =
       "YouTube may have updated their layout. Try refreshing the page, or open a different video.";
     $("app").classList.add("hidden");
+    await showManualIfNoScrape();
     return;
   }
 
+  // Scrape succeeded — show main app with tabs
   $("not-youtube").classList.add("hidden");
   $("app").classList.remove("hidden");
+  $("manual-section").classList.add("hidden");
+  $("analysis-section").classList.add("hidden");
 
   // Render all sections
   renderScore(pageData);
@@ -726,6 +709,24 @@ async function initPopup(forceRefresh = false) {
   // Enable AI generate button if WebGPU is available
   if (isWebGPUAvailable() && pageData?.title) {
     $("btn-generate").disabled = false;
+  }
+}
+
+async function showManualIfNoScrape() {
+  // Check if user has previously entered manual data
+  const stored = await chrome.storage.local.get("manualVideoData");
+  const manual = stored.manualVideoData;
+
+  $("manual-section").classList.remove("hidden");
+
+  if (manual?.title || manual?.description || manual?.tags?.length) {
+    // Pre-populate and immediately show analysis
+    $("manual-title").value = manual.title || "";
+    $("manual-description").value = manual.description || "";
+    $("manual-tags").value = (manual.tags || []).join(", ");
+    $("manual-section").classList.add("hidden");
+    $("analysis-section").classList.remove("hidden");
+    await renderCompetitorTab();
   }
 }
 

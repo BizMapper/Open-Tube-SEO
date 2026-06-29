@@ -28,27 +28,28 @@
     </div>
   </section>
 
-  <!-- ======== MANUAL INPUT + ANALYSIS (always visible) ======== -->
-  <section id="manual-section" class="panel">
+  <!-- ======== MANUAL INPUT (only visible when scrape failed & no manual data yet) ======== -->
+  <section id="manual-section" class="panel hidden">
     <div class="card" id="manual-input-card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h2>Paste your video data</h2>
-        <button id="toggle-manual-input" class="btn small" style="font-size:11px">Show</button>
-      </div>
-      <div id="manual-input-body" style="display:none">
-        <p class="muted small">Enter your video details manually (no YouTube page needed).</p>
-        <label class="input-label">Title</label>
-        <input type="text" id="manual-title" placeholder="Your video title" class="input" />
-        <label class="input-label" style="margin-top:6px">Description</label>
-        <textarea id="manual-description" placeholder="Your video description" class="input" rows="3"></textarea>
-        <label class="input-label" style="margin-top:6px">Tags (comma-separated)</label>
-        <input type="text" id="manual-tags" placeholder="tag1, tag2, tag3" class="input" />
-        <button id="btn-analyze-manual" class="btn primary small" style="margin-top:8px;width:100%">Analyze</button>
-      </div>
+      <h2>Paste your video data</h2>
+      <p class="muted small">Could not read video data from the page. Enter your details manually:</p>
+      <label class="input-label">Title</label>
+      <input type="text" id="manual-title" placeholder="Your video title" class="input" />
+      <label class="input-label" style="margin-top:6px">Description</label>
+      <textarea id="manual-description" placeholder="Your video description" class="input" rows="3"></textarea>
+      <label class="input-label" style="margin-top:6px">Tags (comma-separated)</label>
+      <input type="text" id="manual-tags" placeholder="tag1, tag2, tag3" class="input" />
+      <button id="btn-analyze-manual" class="btn primary small" style="margin-top:8px;width:100%">Analyze</button>
     </div>
+  </section>
 
+  <!-- ======== ANALYSIS RESULTS (hidden until manual data exists) ======== -->
+  <section id="analysis-section" class="panel hidden">
     <div class="card">
-      <h2>Tag strategy breakdown</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>Tag strategy breakdown</h2>
+        <button id="btn-show-manual-input" class="btn small" style="font-size:11px">Edit data</button>
+      </div>
       <div id="competitor-analysis" class="muted small" style="margin-top:4px">
         No tags found for this video.
       </div>
