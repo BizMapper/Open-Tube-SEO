@@ -649,7 +649,11 @@ $("btn-analyze-manual")?.addEventListener("click", async () => {
 
   $("manual-section").classList.add("hidden");
   $("analysis-section").classList.remove("hidden");
-  await renderCompetitorTab();
+
+  const manual = { title, description, tags };
+  renderKeywords(manual);
+  renderCompetitorTab();
+  enableAI(manual);
 });
 
 $("btn-show-manual-input")?.addEventListener("click", () => {
@@ -661,72 +665,66 @@ $("btn-show-manual-input")?.addEventListener("click", () => {
 // Init — load current page data and render everything
 // =============================================================================
 async function initPopup(forceRefresh = false) {
-  // Scrape the page
+  // Load any stored manual data
+  const stored = await chrome.storage.local.get("manualVideoData");
+  const manual = stored.manualVideoData || {};
+
   pageData = await scrapeCurrentPage();
 
-  if (!pageData || pageData.notYouTube) {
+  const isOnYouTube = pageData && !pageData.notYouTube && pageData.ok && !pageData._empty;
+
+  if (isOnYouTube) {
+    // Scrape worked — merge manual data on top (so manual overrides gaps)
+    if (manual.title) pageData.title = manual.title;
+    if (manual.description) pageData.description = manual.description;
+    if (manual.tags?.length) pageData.tags = manual.tags;
+
+    $("not-youtube").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("manual-section").classList.add("hidden");
+    $("analysis-section").classList.add("hidden");
+
+    renderAll(pageData);
+  } else {
+    // Scrape failed — show manual section or not-youtube
     $("not-youtube").classList.remove("hidden");
     $("app").classList.add("hidden");
-    await showManualIfNoScrape();
-    return;
-  }
 
-  if (!pageData.ok) {
-    $("not-youtube").classList.remove("hidden");
-    $("not-youtube").querySelector(".empty-state p").textContent =
-      "Could not load page data";
-    $("not-youtube").querySelector(".empty-state p + p").textContent =
-      pageData.error || "Unknown error. Try refreshing the YouTube page.";
-    $("app").classList.add("hidden");
-    await showManualIfNoScrape();
-    return;
-  }
-
-  if (pageData._empty) {
-    $("not-youtube").classList.remove("hidden");
-    $("not-youtube").querySelector(".empty-state p").textContent =
-      "Could not read YouTube video data";
-    $("not-youtube").querySelector(".empty-state p + p").textContent =
-      "YouTube may have updated their layout. Try refreshing the page, or open a different video.";
-    $("app").classList.add("hidden");
-    await showManualIfNoScrape();
-    return;
-  }
-
-  // Scrape succeeded — show main app with tabs
-  $("not-youtube").classList.add("hidden");
-  $("app").classList.remove("hidden");
-  $("manual-section").classList.add("hidden");
-  $("analysis-section").classList.add("hidden");
-
-  // Render all sections
-  renderScore(pageData);
-  renderReadability(pageData);
-  renderVideoInfo(pageData);
-  renderKeywords(pageData);
-  renderCompetitorTab();
-
-  // Enable AI generate button if WebGPU is available
-  if (isWebGPUAvailable() && pageData?.title) {
-    $("btn-generate").disabled = false;
+    if (manual.title || manual.description || manual.tags?.length) {
+      // Use stored manual data
+      $("not-youtube").classList.add("hidden");
+      $("manual-title").value = manual.title || "";
+      $("manual-description").value = manual.description || "";
+      $("manual-tags").value = (manual.tags || []).join(", ");
+      $("manual-section").classList.add("hidden");
+      $("analysis-section").classList.remove("hidden");
+      renderManualAnalysis(manual);
+    } else {
+      $("not-youtube").classList.add("hidden");
+      $("manual-section").classList.remove("hidden");
+      $("analysis-section").classList.add("hidden");
+    }
   }
 }
 
-async function showManualIfNoScrape() {
-  // Check if user has previously entered manual data
-  const stored = await chrome.storage.local.get("manualVideoData");
-  const manual = stored.manualVideoData;
+function renderAll(data) {
+  renderScore(data);
+  renderReadability(data);
+  renderVideoInfo(data);
+  renderKeywords(data);
+  renderCompetitorTab();
+  enableAI(data);
+}
 
-  $("manual-section").classList.remove("hidden");
+function renderManualAnalysis(manual) {
+  renderKeywords({ title: manual.title, description: manual.description, tags: manual.tags, comments: [] });
+  renderCompetitorTab();
+  enableAI({ title: manual.title, description: manual.description });
+}
 
-  if (manual?.title || manual?.description || manual?.tags?.length) {
-    // Pre-populate and immediately show analysis
-    $("manual-title").value = manual.title || "";
-    $("manual-description").value = manual.description || "";
-    $("manual-tags").value = (manual.tags || []).join(", ");
-    $("manual-section").classList.add("hidden");
-    $("analysis-section").classList.remove("hidden");
-    await renderCompetitorTab();
+function enableAI(data) {
+  if (isWebGPUAvailable() && data?.title) {
+    $("btn-generate").disabled = false;
   }
 }
 

@@ -132,6 +132,9 @@ a { color: var(--link); }
   margin-top: 10px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 56px;
+  z-index: 9;
 }
 .tab {
   background: none;
